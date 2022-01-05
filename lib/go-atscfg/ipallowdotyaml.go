@@ -21,7 +21,6 @@ package atscfg
 
 import (
 	"net"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,6 +110,12 @@ func MakeIPAllowDotYAML(
 					Action:  ActionAllow,
 					Methods: []string{MethodAll},
 				})
+			case "edge_allow_ip":
+				ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
+					Src:     val,
+					Action:  ActionAllow,
+					Methods: []string{"GET"},
+				})
 			case ParamCoalesceMaskLenV4:
 				if vi, err := strconv.Atoi(val); err != nil {
 					warnings = append(warnings, "got param '"+name+"' val '"+val+"' not a number, ignoring!")
@@ -148,17 +153,33 @@ func MakeIPAllowDotYAML(
 	}
 
 	// for edges deny "PUSH|PURGE|DELETE", allow everything else to everyone.
+	//MIGUEL .. Changing Edge logic to only allow IPs from the purge_allow_ip paramater
 	isMid := strings.HasPrefix(server.Type, tc.MidTypePrefix)
 	if !isMid {
+//		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
+//			Src:     `0.0.0.0/0`,
+//			Action:  ActionDeny,
+//			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+//		})
+//		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
+//			Src:     `::/0`,
+//			Action:  ActionDeny,
+//			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+//		})
+
+		// order matters, so sort before adding the denys
+		sort.Sort(ipAllowYAMLDatas(ipAllowDat))
+
+		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
 			Src:     `0.0.0.0/0`,
 			Action:  ActionDeny,
-			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+			Methods: []string{MethodAll},
 		})
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
 			Src:     `::/0`,
 			Action:  ActionDeny,
-			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+			Methods: []string{MethodAll},
 		})
 	} else {
 
@@ -263,52 +284,8 @@ func MakeIPAllowDotYAML(
 			})
 		}
 
-		// allow RFC 1918 server space - TODO JvD: parameterize
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `10.0.0.0/8`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `172.16.0.0/12`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `192.168.0.0/16`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-
 		// order matters, so sort before adding the denys
 		sort.Sort(ipAllowYAMLDatas(ipAllowDat))
-
-		// start with a deny for PUSH and PURGE - TODO CDL: parameterize
-		// but leave purge open through localhost
-		if isMid { // Edges already deny PUSH and PURGE
-			ipAllowDat = append([]ipAllowYAMLData{
-				{
-					Src:     `127.0.0.1`,
-					Action:  ActionAllow,
-					Methods: []string{MethodPurge},
-				},
-				{
-					Src:     `::1`,
-					Action:  ActionAllow,
-					Methods: []string{MethodPurge},
-				},
-				{
-					Src:     `0.0.0.0/0`,
-					Action:  ActionDeny,
-					Methods: []string{MethodPush, MethodPurge},
-				},
-				{
-					Src:     `::/0`,
-					Action:  ActionDeny,
-					Methods: []string{MethodPush, MethodPurge},
-				},
-			}, ipAllowDat...)
-		}
 
 		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
