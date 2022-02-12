@@ -80,6 +80,10 @@ func MakeLoggingDotConfig(
 			format = strings.Replace(format, `"`, `\"`, -1)
 			text += logFormatName + " = format {\n"
 			text += "	Format = '" + format + " '\n"
+			interval := paramData[logFormatField+".Interval"]
+			if interval != "" {
+				text += "   Interval = '" + interval + "'\n"
+			}
 			text += "}\n"
 		}
 	}
