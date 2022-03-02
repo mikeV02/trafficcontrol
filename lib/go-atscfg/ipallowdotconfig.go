@@ -261,52 +261,8 @@ func MakeIPAllowDotConfig(
 			})
 		}
 
-		// allow RFC 1918 server space - TODO JvD: parameterize
-		ipAllowDat = append(ipAllowDat, ipAllowData{
-			Src:    `10.0.0.0-10.255.255.255`,
-			Action: ActionAllow,
-			Method: MethodAll,
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowData{
-			Src:    `172.16.0.0-172.31.255.255`,
-			Action: ActionAllow,
-			Method: MethodAll,
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowData{
-			Src:    `192.168.0.0-192.168.255.255`,
-			Action: ActionAllow,
-			Method: MethodAll,
-		})
-
 		// order matters, so sort before adding the denys
 		sort.Sort(ipAllowDatas(ipAllowDat))
-
-		// start with a deny for PUSH and PURGE - TODO CDL: parameterize
-		// but leave purge open through localhost
-		if isMid { // Edges already deny PUSH and PURGE
-			ipAllowDat = append([]ipAllowData{
-				{
-					Src:    `127.0.0.1`,
-					Action: ActionAllow,
-					Method: `PURGE`,
-				},
-				{
-					Src:    `::1`,
-					Action: ActionAllow,
-					Method: `PURGE`,
-				},
-				{
-					Src:    `0.0.0.0-255.255.255.255`,
-					Action: ActionDeny,
-					Method: `PUSH|PURGE`,
-				},
-				{
-					Src:    `::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff`,
-					Action: ActionDeny,
-					Method: `PUSH|PURGE`,
-				},
-			}, ipAllowDat...)
-		}
 
 		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowData{

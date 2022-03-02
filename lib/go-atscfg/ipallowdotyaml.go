@@ -263,52 +263,8 @@ func MakeIPAllowDotYAML(
 			})
 		}
 
-		// allow RFC 1918 server space - TODO JvD: parameterize
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `10.0.0.0/8`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `172.16.0.0/12`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
-			Src:     `192.168.0.0/16`,
-			Action:  ActionAllow,
-			Methods: []string{MethodAll},
-		})
-
 		// order matters, so sort before adding the denys
 		sort.Sort(ipAllowYAMLDatas(ipAllowDat))
-
-		// start with a deny for PUSH and PURGE - TODO CDL: parameterize
-		// but leave purge open through localhost
-		if isMid { // Edges already deny PUSH and PURGE
-			ipAllowDat = append([]ipAllowYAMLData{
-				{
-					Src:     `127.0.0.1`,
-					Action:  ActionAllow,
-					Methods: []string{MethodPurge},
-				},
-				{
-					Src:     `::1`,
-					Action:  ActionAllow,
-					Methods: []string{MethodPurge},
-				},
-				{
-					Src:     `0.0.0.0/0`,
-					Action:  ActionDeny,
-					Methods: []string{MethodPush, MethodPurge},
-				},
-				{
-					Src:     `::/0`,
-					Action:  ActionDeny,
-					Methods: []string{MethodPush, MethodPurge},
-				},
-			}, ipAllowDat...)
-		}
 
 		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
