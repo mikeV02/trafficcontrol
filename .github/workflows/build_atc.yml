@@ -1,0 +1,29 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build Installer Packagers
+      run: |
+        ./pkg -7 -v traffic_monitor_build traffic_ops_build cache-config_build \
+        traffic_portal_build traffic_router_build traffic_stats_build
+        echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+        
+    - name: Publish Release
+    - uses: ncipollo/release-action@v1
+      if: steps.build.outputs.status == 'success' && !cancelled()
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: test_${{ env.PACKAGED_OUTPUTDATE }}
+        artifacts: ./dist/*
+        body: |
+          This is a test release ${{ env.PACKAGED_OUTPUTDATE }}
