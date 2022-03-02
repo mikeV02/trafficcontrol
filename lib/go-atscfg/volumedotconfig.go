@@ -68,7 +68,7 @@ func MakeVolumeDotConfig(
 		nextVolume++
 	}
 	if ramDrivePrefix := paramData["RAM_Drive_Prefix"]; ramDrivePrefix != "" {
-		text += volumeText(strconv.Itoa(nextVolume), numVolumes)
+		text += ramVolumeText(strconv.Itoa(nextVolume), numVolumes)
 		nextVolume++
 	}
 	if ssdDrivePrefix := paramData["SSD_Drive_Prefix"]; ssdDrivePrefix != "" {
@@ -90,6 +90,10 @@ func MakeVolumeDotConfig(
 
 func volumeText(volume string, numVolumes int) string {
 	return "volume=" + volume + " scheme=http size=" + strconv.Itoa(100/numVolumes) + "%\n"
+}
+
+func ramVolumeText(volume string, numVolumes int) string {
+	return "volume=" + volume + " scheme=http size=" + strconv.Itoa(100/numVolumes) + "% ramcache=false\n"
 }
 
 func getNumVolumes(paramData map[string]string) int {
