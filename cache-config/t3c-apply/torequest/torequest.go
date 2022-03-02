@@ -31,6 +31,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"bufio"
 
 	"github.com/apache/trafficcontrol/cache-config/t3c-apply/config"
 	"github.com/apache/trafficcontrol/cache-config/t3c-apply/util"
@@ -564,26 +565,62 @@ func (r *TrafficOpsReq) CheckSystemServices() error {
 func (r *TrafficOpsReq) IsPackageInstalled(name string) bool {
 	for k, v := range r.pkgs {
 		if strings.HasPrefix(k, name) {
+			log.Infof("IsPackageInstalled '%v' found '%v' in cache, returning %v\n", name, k, v)
 			return v
 		}
 	}
 
-	log.Infof("IsPackageInstalled '%v' not found in cache, querying rpm", name)
-	pkgArr, err := util.PackageInfo("pkg-query", name)
+    // Taken from https://github.com/zcalusic/sysinfo
+    f, err := os.Open("/etc/os-release")
 	if err != nil {
-		log.Errorf(`IsPackageInstalled PackageInfo(pkg-query, %v) failed, caching as not installed and returning false! Error: %v\n`, name, err.Error())
-		r.pkgs[name] = false
+        log.Errorf(`Could not verify linux distribution. File /etc/os-release not found. Error: %v\n`, err.Error())
 		return false
 	}
-	if len(pkgArr) > 0 {
-		pkgAndVersion := pkgArr[0]
-		log.Infof("IsPackageInstalled '%v' found in rpm, adding '%v' to cache", name, pkgAndVersion)
-		r.pkgs[pkgAndVersion] = true
-		return true
+	defer f.Close()
+
+    reID := regexp.MustCompile(`^ID=(.*)$`)
+    var OSVendor string
+    var pkgQuery string
+    var pkgMngr string
+
+    s := bufio.NewScanner(f)
+	for s.Scan() {
+	    if m := reID.FindStringSubmatch(s.Text()); m != nil {
+			OSVendor = strings.Trim(m[1], `"`)
+		}
 	}
-	log.Infof("IsPackageInstalled '%v' not found in rpm, adding '%v'=false to cache", name, name)
-	r.pkgs[name] = false
-	return false
+
+    switch OSVendor {
+        case "debian":
+            fallthrough
+        case "ubuntu":
+            pkgQuery = "dpkg-query"
+            pkgMngr = "dpkg"
+        case "centos":
+            fallthrough
+        case "rocky":
+            fallthrough
+        case "rhel":
+            pkgQuery = "pkg-query"
+            pkgMngr = "rpm"
+    }
+    	log.Infof("IsPackageInstalled '%v' not found in cache, querying %v", name, pkgMngr)
+    	pkgArr, err := util.PackageInfo(pkgQuery, name)
+    	if err != nil {
+    		log.Errorf(`IsPackageInstalled PackageInfo(%v, %v) failed, caching as not installed and returning false! Error: %v\n`, pkgQuery, name, err.Error())
+    		r.pkgs[name] = false
+    		return false
+    	}
+    	if len(pkgArr) > 0 {
+    		pkgAndVersion := pkgArr[0]
+    		log.Infof("IsPackageInstalled '%v' found in %v, adding '%v' to cache", name, pkgMngr, pkgAndVersion)
+    		r.pkgs[pkgAndVersion] = true
+    		return true
+    	}
+    	log.Infof("IsPackageInstalled '%v' not found in %v, adding '%v'=false to cache", name, pkgMngr, name)
+    	r.pkgs[name] = false
+    	return false
+
 }
 
 // GetConfigFile fetchs a 'Configfile' by file name.
@@ -877,10 +914,43 @@ func (r *TrafficOpsReq) ProcessPackages() error {
 		var instpkg string // installed package
 		var reqpkg string  // required package
 		log.Infof("Processing package %s-%s\n", pkgs[ii].Name, pkgs[ii].Version)
+
+        // Taken from https://github.com/zcalusic/sysinfo
+        f, err := os.Open("/etc/os-release")
+        if err != nil {
+            log.Errorf(`Could not verify linux distribution. File /etc/os-release not found. Error: %v\n`, err.Error())
+            return errors.New("/etc/os-release: " + err.Error())
+        }
+        defer f.Close()
+
+        reID := regexp.MustCompile(`^ID=(.*)$`)
+        var OSVendor string
+        var pkgQuery string
+
+        s := bufio.NewScanner(f)
+        for s.Scan() {
+            if m := reID.FindStringSubmatch(s.Text()); m != nil {
+                OSVendor = strings.Trim(m[1], `"`)
+            }
+        }
+
+        switch OSVendor {
+            case "debian":
+                fallthrough
+            case "ubuntu":
+                pkgQuery = "dpkg-query"
+            case "centos":
+                fallthrough
+            case "rocky":
+                fallthrough
+            case "rhel":
+                pkgQuery = "pkg-query"
+        }
+
 		// check to see if any package by name is installed.
-		arr, err := util.PackageInfo("pkg-query", pkgs[ii].Name)
+		arr, err := util.PackageInfo(pkgQuery, pkgs[ii].Name)
 		if err != nil {
-			return errors.New("PackgeInfo pkg-query: " + err.Error())
+			return errors.New("PackgeInfo " + pkgQuery + ": " + err.Error())
 		}
 		// go needs the ternary operator :)
 		if len(arr) == 1 {

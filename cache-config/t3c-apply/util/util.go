@@ -298,6 +298,15 @@ func PackageInfo(cmdstr string, name string) ([]string, error) {
 		} else if err != nil {
 			return nil, errors.New("rpm -q '" + name + "' returned: " + err.Error())
 		}
+		case "dpkg-query": // returns the package name for 'name'.
+			output, rc, err := ExecCommand("/bin/dpkg-query", "-f", "${binary:Package}-${Version}", "-W", name)
+			if rc == 1 { // the package is not installed.
+				return nil, nil
+			} else if rc == 0 { // add the rpm name
+				result = append(result, string(strings.TrimSpace(string(output))))
+			} else if err != nil {
+				return nil, errors.New("{dpkg-query -f '${binary:Package}-${Version}' -W " + name + "} returned: " + err.Error())
+			}
 	case "pkg-requires": // returns a list of packages that requires package 'name'
 		output, rc, err := ExecCommand("/bin/rpm", "-q", "--whatrequires", name)
 		if rc == 1 { // no package reuires package 'name'

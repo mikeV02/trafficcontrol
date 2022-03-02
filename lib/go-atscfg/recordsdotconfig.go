@@ -22,6 +22,9 @@ package atscfg
 import (
 	"os/exec"
 	"strings"
+	"os"
+	"regexp"
+	"bufio"
 
 	"github.com/apache/trafficcontrol/lib/go-tc"
 )
@@ -150,8 +153,45 @@ func addRecordsDotConfigViaStr(txt string) (string, []string) {
 	responseViaStr := `proxy.config.http.response_via_str`
 	responseServerStr := `proxy.config.http.response_server_str`
 
-	cmd := "yum info installed trafficserver | grep Release"
+	// Taken from https://github.com/zcalusic/sysinfo
+	f, err := os.Open("/etc/os-release")
+	if err != nil {
+		warnings = append(warnings, "Could not verify linux distribution. File /etc/os-release not found. Error: " + err.Error())
+		return txt, warnings
+	}
+	defer f.Close()
+
+	reID := regexp.MustCompile(`^ID=(.*)$`)
+	var OSVendor string
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+	    if m := reID.FindStringSubmatch(s.Text()); m != nil {
+			OSVendor = strings.Trim(m[1], `"`)
+		}
+	}
+
+	var cmd string
+
+	switch OSVendor {
+		case "debian":
+		    fallthrough
+		case "ubuntu":
+		    cmd = "dpkg-query --status trafficserver | grep Version"
+		case "centos":
+		    fallthrough
+		case "rocky":
+		    fallthrough
+		case "rhel":
+		    cmd = "yum info installed trafficserver | grep Release"
+	}
+
 	yumOutput, err := exec.Command("sh", "-c", cmd).Output()
+
+	if err != nil {
+		warnings = append(warnings, "could not read trafficserver release information from yum! Not setting via strings")
+		return txt, warnings
+	}
 
 	if err != nil {
 		warnings = append(warnings, "could not read trafficserver release information from yum! Not setting via strings")
