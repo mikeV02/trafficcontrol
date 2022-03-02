@@ -21,7 +21,6 @@ package atscfg
 
 import (
 	"net"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,6 +110,12 @@ func MakeIPAllowDotYAML(
 					Action:  ActionAllow,
 					Methods: []string{MethodAll},
 				})
+			case "edge_allow_ip":
+				ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
+					Src:     val,
+					Action:  ActionAllow,
+					Methods: []string{"GET"},
+				})
 			case ParamCoalesceMaskLenV4:
 				if vi, err := strconv.Atoi(val); err != nil {
 					warnings = append(warnings, "got param '"+name+"' val '"+val+"' not a number, ignoring!")
@@ -147,18 +152,22 @@ func MakeIPAllowDotYAML(
 		}
 	}
 
-	// for edges deny "PUSH|PURGE|DELETE", allow everything else to everyone.
+	// for edges ends on deny all not included in edge_allow_ip
 	isMid := strings.HasPrefix(server.Type, tc.MidTypePrefix)
 	if !isMid {
+		// order matters, so sort before adding the denys
+		sort.Sort(ipAllowYAMLDatas(ipAllowDat))
+
+		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
 			Src:     `0.0.0.0/0`,
 			Action:  ActionDeny,
-			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+			Methods: []string{MethodAll},
 		})
 		ipAllowDat = append(ipAllowDat, ipAllowYAMLData{
 			Src:     `::/0`,
 			Action:  ActionDeny,
-			Methods: []string{MethodPush, MethodPurge, http.MethodDelete},
+			Methods: []string{MethodAll},
 		})
 	} else {
 

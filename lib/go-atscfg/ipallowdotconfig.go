@@ -109,6 +109,12 @@ func MakeIPAllowDotConfig(
 					Action: ActionAllow,
 					Method: MethodAll,
 				})
+			case "edge_allow_ip":
+				ipAllowDat = append(ipAllowDat, ipAllowData{
+					Src:    val,
+					Action: ActionAllow,
+					Method: "GET",
+				})
 			case ParamCoalesceMaskLenV4:
 				if vi, err := strconv.Atoi(val); err != nil {
 					warnings = append(warnings, "got param '"+name+"' val '"+val+"' not a number, ignoring!")
@@ -145,18 +151,22 @@ func MakeIPAllowDotConfig(
 		}
 	}
 
-	// for edges deny "PUSH|PURGE|DELETE", allow everything else to everyone.
+	// for edges ends on deny all not included in edge_allow_ip
 	isMid := strings.HasPrefix(server.Type, tc.MidTypePrefix)
 	if !isMid {
+		// order matters, so sort before adding the denys
+		sort.Sort(ipAllowDatas(ipAllowDat))
+
+		// end with a deny
 		ipAllowDat = append(ipAllowDat, ipAllowData{
 			Src:    `0.0.0.0-255.255.255.255`,
 			Action: ActionDeny,
-			Method: `PUSH|PURGE|DELETE`,
+			Method: MethodAll,
 		})
 		ipAllowDat = append(ipAllowDat, ipAllowData{
 			Src:    `::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff`,
 			Action: ActionDeny,
-			Method: `PUSH|PURGE|DELETE`,
+			Method: MethodAll,
 		})
 	} else {
 
