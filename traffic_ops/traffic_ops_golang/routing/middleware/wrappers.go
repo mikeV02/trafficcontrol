@@ -153,6 +153,11 @@ func WrapHeaders(h http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set(rfc.Vary, rfc.AcceptEncoding)
 		w.Header().Set("X-Server-Name", ServerName)
 		w.Header().Set(rfc.PermissionsPolicy, "interest-cohort=()")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Referrer-Policy", "same-origin")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		w.Header().Set("Content-Security-Policy", "script-src 'self'")
 		iw := &util.BodyInterceptor{W: w}
 		h(iw, r)
 
