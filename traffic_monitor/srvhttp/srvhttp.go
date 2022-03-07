@@ -253,7 +253,7 @@ func (s *Server) handleStyleFunc(staticFileDir string) (http.HandlerFunc, error)
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rfc.ContentType, rfc.MIME_CSS.String())
 		w.Header().Set(rfc.PermissionsPolicy, "interest-cohort=()")
-		w.Header().Set("X-Content-Type-Options". "nosniff")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
@@ -276,7 +276,7 @@ func (s *Server) handleFile(name string) (http.HandlerFunc, error) {
 
 		w.Header().Set(rfc.ContentType, contentType)
 		w.Header().Set(rfc.PermissionsPolicy, "interest-cohort=()")
-		w.Header().Set("X-Content-Type-Options". "nosniff")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
