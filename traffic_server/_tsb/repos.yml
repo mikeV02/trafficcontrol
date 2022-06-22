@@ -4,7 +4,7 @@ ats:
     head: cb7eda60dc8c2068afd458fd20a8dd6232887f0d
     extra: []
 trafficcontrol:
-    src: https://github.com/apache/trafficcontrol
-    branch: master
+    src: https://github.com/mikeV02/trafficcontrol
+    branch: ats_build
     head: cfd51b8400dc4890e9097ef9eba555db5934223d
     extra: []
