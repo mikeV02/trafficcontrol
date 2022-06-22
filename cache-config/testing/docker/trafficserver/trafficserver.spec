@@ -141,7 +141,7 @@ fi
 /opt/trafficserver/etc/trafficserver/trafficserver-release
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/cache.config
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/hosting.config
-%config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/ip_allow.config
+%config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/ip_allow.yaml
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/logging.yaml
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/parent.config
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/plugin.config
@@ -150,7 +150,6 @@ fi
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/socks.config
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/splitdns.config
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/ssl_multicert.config
-%config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/ssl_server_name.yaml
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/storage.config
 %config(noreplace) %attr(644,ats,ats) /opt/trafficserver/etc/trafficserver/volume.config
 
