@@ -52,7 +52,6 @@ Apache Traffic Server with Apache Traffic Control modifications and environment 
 %prep
 %setup -c -T
 cp -far %{src}/. .
-cp -fa %{src}/../traffic_server_jemalloc ..
 autoreconf -vfi
 
 %build
@@ -82,7 +81,6 @@ make DESTDIR=$RPM_BUILD_ROOT install
 mkdir -p $RPM_BUILD_ROOT/opt/trafficserver/etc/trafficserver/snapshots
 mkdir -p $RPM_BUILD_ROOT/usr/lib/systemd/system
 cp rc/trafficserver.service $RPM_BUILD_ROOT/usr/lib/systemd/system/
-cp ../traffic_server_jemalloc $RPM_BUILD_ROOT/opt/trafficserver/bin/
 
 %if %{?_with_openssl_included:1}%{!?_with_openssl_included:0}
 mkdir -p $RPM_BUILD_ROOT/opt/trafficserver/openssl

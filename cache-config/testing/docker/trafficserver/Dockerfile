@@ -106,10 +106,7 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 
 ADD  traffic_server/plugins/astats_over_http /astats_over_http
 
-COPY cache-config/testing/docker/trafficserver/traffic_server_jemalloc \
-     cache-config/testing/docker/trafficserver/trafficserver.spec \
-     cache-config/testing/docker/trafficserver/cjose.pic.patch  \
-     cache-config/testing/docker/trafficserver/jansson.pic.patch \
+COPY cache-config/testing/docker/trafficserver/trafficserver.spec \
      cache-config/testing/docker/trafficserver/run.sh \ 
     / 
 
