@@ -6,5 +6,5 @@ ats:
 trafficcontrol:
     src: https://github.com/mikeV02/trafficcontrol
     branch: ats_build
-    head: aa7c2382bddf08a4f1f2ccc8d4bb2bf977d833cc
+    head: ec25e985e42d97a7b59dcb6beb2d0e44d7d732f7
     extra: []
