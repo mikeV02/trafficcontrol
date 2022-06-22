@@ -31,29 +31,6 @@ setowner() {
 trap 'exit_code=$?; setowner /rpmbuilddir/RPMS/x86_64 /rpmbuilddir/RPMS/x86_64; exit $exit_code' EXIT;
 
 mkdir /opt/build
-cp -fa /opt/{src,build}/jansson
-cp -fa /opt/{src,build}/cjose
-
-if [ "$1" == "--with_openssl" ]; then
-	cp -fa /opt/{src,build}/openssl
-
-	# Build OpenSSL
-	(
-		cd /opt/build/openssl && \
-		./config --prefix=/opt/trafficserver/openssl --openssldir=/opt/trafficserver/openssl zlib && \
-		make -j`nproc` && \
-		make install_sw
-	) || die "Failed to build OpenSSL"
-	cjose_openssl='--with-openssl=/opt/trafficserver/openssl'
-	rpmbuild_openssl='--with openssl_included'
-else
-	cjose_openssl=''
-	rpmbuild_openssl='--without openssl_included'
-fi
-
-
-(cd /opt/build/jansson && patch -p1 < /opt/src/jansson.pic.patch && autoreconf -i && ./configure --enable-shared=no && make -j`nproc` && make install) || die "Failed to install jansson from source."
-(cd /opt/build/cjose && patch -p1 < /opt/src/cjose.pic.patch && autoreconf -i && ./configure --enable-shared=no ${cjose_openssl} && make -j`nproc` && make install) || die "Failed to install cjose from source."
 
 # Patch astats in so that it builds in-tree.
 cp -far /opt/src/astats_over_http /rpmbuilddir/SOURCES/src/plugins/astats_over_http

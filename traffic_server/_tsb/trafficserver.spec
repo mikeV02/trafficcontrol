@@ -52,7 +52,6 @@ Apache Traffic Server with Apache Traffic Control modifications and environment 
 %prep
 %setup -c -T
 cp -far %{src}/. .
-cp -far %{src}/../traffic_server_jemalloc ..
 autoreconf -vfi
 
 %build
