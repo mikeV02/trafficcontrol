@@ -27,6 +27,8 @@
 %global install_prefix "/opt"
 %global api_stats "4096"
 %global _find_debuginfo_dwz_opts %{nil}
+%global debug_package %{nil}
+
 %{!?_with_openssl_included: %{!?_without_openssl_included: %define _without_openssl_included --without-openssl_included}}
 %{?_with_openssl_included: %{?_without_openssl_included: %{error: both _with_openssl_included and _without_openssl_included}}}
 %{!?_with_openssl_included: %{!?_without_openssl_included: %{error: neither _with_openssl_included nor _without_openssl_included}}}
