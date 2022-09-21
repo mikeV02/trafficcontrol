@@ -237,7 +237,12 @@ public class StatTracker {
 			}
 			final SetResponse sr = zone.findRecords(qname, qtype);
 			if (sr.isNXDOMAIN()) {
-				resultCode = ResultCode.NXDOMAIN;
+				final SetResponse trulyNxDomain = zone.findRecords(qname, 2); // check NS to determine if it is really NXDOMAIN
+				if (!trulyNxDomain.isNXDOMAIN()) {
+					resultCode = ResultCode.NODATA; // Domain does exist, just that the record type does not
+				} else {
+					resultCode = ResultCode.NXDOMAIN;
+				}
 			} else if (sr.isNXRRSET()) {
 				resultCode = ResultCode.NODATA;
 			}
