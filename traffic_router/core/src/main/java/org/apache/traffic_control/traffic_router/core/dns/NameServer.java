@@ -395,7 +395,7 @@ public class NameServer {
 			 */
 			lookup(sr.getCNAME().getTarget(), qtype, clientAddress, zone, response, iteration + 1, flags, dnssecRequest, builder);
 		} else if (sr.isNXDOMAIN()) {
-			response.getHeader().setRcode(Rcode.NXDOMAIN);
+			response.getHeader().setRcode(Rcode.NOERROR);
 			response.getHeader().setFlag(Flags.AA);
 			addDenialOfExistence(qname, zone, response, flags);
 			addSOA(zone, response, Section.AUTHORITY, flags);
