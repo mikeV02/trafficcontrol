@@ -395,6 +395,10 @@ public class NameServer {
 			 */
 			lookup(sr.getCNAME().getTarget(), qtype, clientAddress, zone, response, iteration + 1, flags, dnssecRequest, builder);
 		} else if (sr.isNXDOMAIN()) {
+			final SetResponse trulyNxDomain = zone.findRecords(qname, 2); // check NS to determine if it is really NXDOMAIN
+			if (trulyNxDomain.isSuccessful()) {
+				response.getHeader().setRcode(Rcode.NOERROR); // Domain does exist, just that the record type does not
+			}
 			response.getHeader().setRcode(Rcode.NXDOMAIN);
 			response.getHeader().setFlag(Flags.AA);
 			addDenialOfExistence(qname, zone, response, flags);
