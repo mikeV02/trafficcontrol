@@ -370,6 +370,7 @@ public class NameServer {
 		}
 
 		final SetResponse sr = zone.findRecords(qname, qtype);
+		LOGGER.debug("MIKE qname = " + qname + " qtype = " + qtype);
 
 		if (sr.isSuccessful()) {
 			for (final RRset answer : sr.answers()) {
@@ -395,7 +396,12 @@ public class NameServer {
 			 */
 			lookup(sr.getCNAME().getTarget(), qtype, clientAddress, zone, response, iteration + 1, flags, dnssecRequest, builder);
 		} else if (sr.isNXDOMAIN()) {
-			response.getHeader().setRcode(Rcode.NXDOMAIN);
+			final SetResponse trulyNxDomain = zone.findRecords(qname, 2); // check NS to determine if it is really NXDOMAIN
+			if (!trulyNxDomain.isNXDOMAIN()) {
+				response.getHeader().setRcode(Rcode.NOERROR); // Domain does exist, just that the record type does not
+			} else {
+				response.getHeader().setRcode(Rcode.NXDOMAIN);
+			}
 			response.getHeader().setFlag(Flags.AA);
 			addDenialOfExistence(qname, zone, response, flags);
 			addSOA(zone, response, Section.AUTHORITY, flags);
