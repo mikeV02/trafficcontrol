@@ -398,8 +398,9 @@ public class NameServer {
 			final SetResponse trulyNxDomain = zone.findRecords(qname, 2); // check NS to determine if it is really NXDOMAIN
 			if (trulyNxDomain.isSuccessful()) {
 				response.getHeader().setRcode(Rcode.NOERROR); // Domain does exist, just that the record type does not
+			} else {
+				response.getHeader().setRcode(Rcode.NXDOMAIN);
 			}
-			response.getHeader().setRcode(Rcode.NXDOMAIN);
 			response.getHeader().setFlag(Flags.AA);
 			addDenialOfExistence(qname, zone, response, flags);
 			addSOA(zone, response, Section.AUTHORITY, flags);
