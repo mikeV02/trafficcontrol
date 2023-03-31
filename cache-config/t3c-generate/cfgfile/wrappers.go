@@ -220,6 +220,7 @@ func MakeRemapDotConfig(toData *t3cutil.ConfigData, fileName string, hdrCommentT
 	opts := &atscfg.RemapDotConfigOpts{HdrComment: hdrCommentTxt}
 	return atscfg.MakeRemapDotConfig(
 		toData.Server,
+		toData.Servers,
 		toData.DeliveryServices,
 		toData.DeliveryServiceServers,
 		toData.DeliveryServiceRegexes,
@@ -230,6 +231,7 @@ func MakeRemapDotConfig(toData *t3cutil.ConfigData, fileName string, hdrCommentT
 		toData.CacheGroups,
 		toData.ServerCapabilities,
 		toData.DSRequiredCapabilities,
+		cfg.Dir,
 		opts,
 	)
 }
