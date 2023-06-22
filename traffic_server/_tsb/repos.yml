@@ -1,7 +1,7 @@
 ats:
     src: https://github.com/apache/trafficserver
     branch: 9.1.x
-    head: cb7eda60dc8c2068afd458fd20a8dd6232887f0d
+    head: 5dedafb63bedb1a0e98dd343d9e938f1d515a612
     extra: []
 trafficcontrol:
     src: https://github.com/mikeV02/trafficcontrol
