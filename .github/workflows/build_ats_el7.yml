@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Build and Release RHEL8
+name: Build and Release ATS EL7
 
 on:
   workflow_dispatch:
@@ -33,11 +33,18 @@ jobs:
     - name: Build Installer Packagers
       run: |
         export atscommit="$(git rev-parse --short=8 HEAD)"
-        ./pkg -8 -v -L -S traffic_monitor_build traffic_ops_build cache-config_build \
-        traffic_portal_build traffic_router_build traffic_stats_build
+        sed -E 's/BASE_IMAGE:-rockylinux/BASE_IMAGE:-centos/' -i infrastructure/docker/build/docker-compose-opt.yml
+        sed -E 's/RHEL_VERSION:-8/RHEL_VERSION:-7/' -i infrastructure/docker/build/docker-compose-opt.yml
+        sed -E 's/BASE_IMAGE=rockylinux/BASE_IMAGE=centos/' -i infrastructure/docker/build/Dockerfile-tsb
+        sed -E 's/RHEL_VERSION=8/RHEL_VERSION=7/' -i infrastructure/docker/build/Dockerfile-tsb
+        sed -E 's/BASE_IMAGE:-rockylinux/BASE_IMAGE:-centos/' -i traffic_server/_tsb/docker-compose.yml
+        sed -E 's/RHEL_VERSION:-8/RHEL_VERSION:-7/' -i traffic_server/_tsb/docker-compose.yml
+        sed -E 's/BASE_IMAGE=rockylinux/BASE_IMAGE=centos/' -i traffic_server/_tsb/Dockerfile
+        sed -E 's/RHEL_VERSION=8/RHEL_VERSION=7/' -i traffic_server/_tsb/Dockerfile
+        sed -E 's/os_pkgs\=\(devtoolset-7\)/os_pkgs\=\(devtoolset-7 curl jansson jansson-devel libmaxminddb libmaxminddb-devel\)/' -i traffic_server/_tsb/Dockerfile
         sed -E "s/\%\{distance\}\.\%\{commit\}\%\{\?dist\}/\%\{distance\}\.$atscommit\%\{\?dist\}/" -i traffic_server/_tsb/trafficserver.spec
-        ./pkg -8 -v -L -S -o ats
-        echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL8" >> $GITHUB_ENV
+        ./pkg -7 -v -L -S -o ats
+        echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
         echo "::set-output name=status::success"
         
     # - name: Deb Package
