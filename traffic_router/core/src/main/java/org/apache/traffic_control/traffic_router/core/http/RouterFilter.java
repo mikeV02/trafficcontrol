@@ -58,6 +58,11 @@ public class RouterFilter extends OncePerRequestFilter {
 		final Date requestDate = new Date();
 
 		if (request.getLocalPort() == trafficRouterManager.getApiPort() || request.getLocalPort() == trafficRouterManager.getSecureApiPort()) {
+			response.addHeader("X-Content-Type-Options", "nosniff");
+			response.addHeader("X-Frame-Options", "SAMEORIGIN");
+			response.addHeader("Referrer-Policy", "same-origin");
+			response.addHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+			response.addHeader("Content-Security-Policy", "script-src 'self'");
 			chain.doFilter(request, response);
 			return;
 		}
