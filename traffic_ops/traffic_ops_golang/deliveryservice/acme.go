@@ -607,18 +607,16 @@ func GetAcmeClient(acmeAccount *config.ConfigAcmeAccount, userTx *sql.Tx, db *sq
 		return nil, err
 	}
 
-	if acmeAccount.AcmeProvider == tc.LetsEncryptAuthType {
-		client.Challenge.Remove(challenge.HTTP01)
-		client.Challenge.Remove(challenge.TLSALPN01)
-		trafficRouterDns := NewDNSProviderTrafficRouter()
-		trafficRouterDns.db = db
-		trafficRouterDns.xmlId = xmlId
-		if err != nil {
-			log.Errorf("Error creating Traffic Router DNS provider: %s", err.Error())
-			return nil, err
-		}
-		client.Challenge.SetDNS01Provider(trafficRouterDns)
+	client.Challenge.Remove(challenge.HTTP01)
+	client.Challenge.Remove(challenge.TLSALPN01)
+	trafficRouterDns := NewDNSProviderTrafficRouter()
+	trafficRouterDns.db = db
+	trafficRouterDns.xmlId = xmlId
+	if err != nil {
+		log.Errorf("Error creating Traffic Router DNS provider: %s", err.Error())
+		return nil, err
 	}
+	client.Challenge.SetDNS01Provider(trafficRouterDns)
 
 	if foundPreviousAccount {
 		log.Debugf("Found existing account with %s", acmeAccount.AcmeProvider)
