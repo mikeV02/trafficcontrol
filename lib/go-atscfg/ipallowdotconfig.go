@@ -78,6 +78,11 @@ func MakeIPAllowDotConfig(
 	params := paramsToMultiMap(filterParams(serverParams, IPAllowConfigFileName, "", "", ""))
 
 	ipAllowDat := []ipAllowData{}
+	
+	// localhost is trusted.
+	ipAllowDat = append([]ipAllowData{allowAll(`127.0.0.1`)}, ipAllowDat...)
+	ipAllowDat = append([]ipAllowData{allowAll(`::1`)}, ipAllowDat...)
+
 
 	// default for coalesce_ipv4 = 24, 5 and for ipv6 48, 5; override with the parameters in the server profile.
 	coalesceMaskLenV4 := DefaultCoalesceMaskLenV4
@@ -129,8 +134,6 @@ func MakeIPAllowDotConfig(
 	// for edges deny "PUSH|PURGE|DELETE", allow everything else to everyone.
 	isMid := strings.HasPrefix(server.Type, tc.MidTypePrefix)
 	if !isMid {
-		ipAllowDat = append([]ipAllowData{allowAll(`127.0.0.1`)}, ipAllowDat...)
-		ipAllowDat = append([]ipAllowData{allowAll(`::1`)}, ipAllowDat...)
 		ipAllowDat = append(ipAllowDat, allowAllButPushPurgeDelete(`0.0.0.0-255.255.255.255`))
 		ipAllowDat = append(ipAllowDat, allowAllButPushPurgeDelete(`::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff`))
 	} else {
@@ -228,17 +231,8 @@ func MakeIPAllowDotConfig(
 			ipAllowDat = append(ipAllowDat, allowAllButPushPurge(util.RangeStr(cidr)))
 		}
 
-		// allow RFC 1918 server space - TODO JvD: parameterize
-		ipAllowDat = append(ipAllowDat, allowAllButPushPurge(`10.0.0.0-10.255.255.255`))
-		ipAllowDat = append(ipAllowDat, allowAllButPushPurge(`172.16.0.0-172.31.255.255`))
-		ipAllowDat = append(ipAllowDat, allowAllButPushPurge(`192.168.0.0-192.168.255.255`))
-
 		// order matters, so sort before adding the denys
 		sort.Sort(ipAllowDatas(ipAllowDat))
-
-		// start by allowing everything to localhost, including PURGE and PUSH
-		ipAllowDat = append([]ipAllowData{allowAll(`127.0.0.1`)}, ipAllowDat...)
-		ipAllowDat = append([]ipAllowData{allowAll(`::1`)}, ipAllowDat...)
 
 		// end with a deny
 		ipAllowDat = append(ipAllowDat, denyAll(`0.0.0.0-255.255.255.255`))

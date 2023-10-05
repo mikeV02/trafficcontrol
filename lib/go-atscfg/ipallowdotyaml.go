@@ -228,21 +228,8 @@ func MakeIPAllowDotYAML(
 			ipAllowDat = append(ipAllowDat, yamlAllowAllButPushPurge(cidr.String()))
 		}
 
-		// allow RFC 1918 server space - TODO JvD: parameterize
-		ipAllowDat = append(ipAllowDat, yamlAllowAllButPushPurge(`10.0.0.0/8`))
-		ipAllowDat = append(ipAllowDat, yamlAllowAllButPushPurge(`172.16.0.0/12`))
-		ipAllowDat = append(ipAllowDat, yamlAllowAllButPushPurge(`192.168.0.0/16`))
-
 		// order matters, so sort before adding the denys
 		sort.Sort(ipAllowYAMLDatas(ipAllowDat))
-
-		// start with a deny for PUSH and PURGE - TODO CDL: parameterize
-		// but leave purge open through localhost
-		// Edges already deny PUSH and PURGE
-
-		// start by allowing everything to localhost, including PURGE and PUSH
-		ipAllowDat = append([]ipAllowYAMLData{yamlAllowAll(`127.0.0.1`)}, ipAllowDat...)
-		ipAllowDat = append([]ipAllowYAMLData{yamlAllowAll(`::1`)}, ipAllowDat...)
 
 		// end with a deny
 		ipAllowDat = append(ipAllowDat, yamlDenyAll(`0.0.0.0/0`))
