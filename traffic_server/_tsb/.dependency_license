@@ -17,10 +17,5 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Patch files, cannot bear comments
-cjose.pic.patch, Apache-2.0
-jansson.pic.patch, Apache-2.0
-
 # YAML files, but are manipulated with scripts that would strip comments.
-patches.yml, Apache-2.0
 repos.yml, Apache-2.0
