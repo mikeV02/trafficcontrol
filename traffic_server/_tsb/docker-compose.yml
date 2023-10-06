@@ -27,9 +27,6 @@ services:
         RHEL_VERSION: ${RHEL_VERSION:-8}
     image: ats_build
     volumes:
-    - ./src/jansson:/opt/src/jansson:Z
-    - ./src/cjose:/opt/src/cjose:Z
-    - ./src/openssl:/opt/src/openssl:Z
     - ./src/ats:/rpmbuilddir/SOURCES/src:Z
-    - ./src/trafficcontrol/traffic_server/plugins/astats_over_http:/opt/src/astats_over_http:Z
+    - ../plugins/astats_over_http:/opt/src/astats_over_http:Z
     - ../../dist:/rpmbuilddir/RPMS/x86_64:Z

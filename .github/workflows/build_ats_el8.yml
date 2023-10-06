@@ -34,7 +34,7 @@ jobs:
       run: |
         export atscommit="$(git rev-parse --short=8 HEAD)"
         sed -E "s/\%\{distance\}\.\%\{commit\}\%\{\?dist\}/\%\{distance\}\.$atscommit\%\{\?dist\}/" -i traffic_server/_tsb/trafficserver.spec
-        ./pkg -8 -v -L -S -o ats
+        ./pkg -8 -b -v -L -S -o ats
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
         echo "::set-output name=status::success"
         

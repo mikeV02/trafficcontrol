@@ -101,12 +101,9 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 		zlib \
 		zlib-devel \
 	&& yum clean all
-COPY	jansson.pic.patch /opt/src/
-COPY	cjose.pic.patch /opt/src/
 RUN	pip3 install --user Sphinx
 COPY	run.sh /run.sh
 COPY	trafficserver.spec /rpmbuilddir/SPECS/trafficserver.spec
-COPY	traffic_server_jemalloc /rpmbuilddir/SOURCES/traffic_server_jemalloc
 RUN	/usr/sbin/useradd -u 176 -r ats -s /sbin/nologin -d /
 CMD if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 		os_toolset=gcc-toolset-9; \
