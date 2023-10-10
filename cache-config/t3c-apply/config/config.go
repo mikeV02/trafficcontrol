@@ -277,7 +277,7 @@ func GetCfg(appVersion string, gitRevision string) (Cfg, error) {
 
 	const useStrategiesFlagName = "use-strategies"
 	const defaultUseStrategies = t3cutil.UseStrategiesFlagFalse
-	useStrategiesPtr := getopt.EnumLong(useStrategiesFlagName, 0, []string{string(t3cutil.UseStrategiesFlagTrue), string(t3cutil.UseStrategiesFlagCore), string(t3cutil.UseStrategiesFlagCore), ""}, "", "[true | core| false] whether to generate config using strategies.yaml instead of parent.config. If true use the parent_select plugin, if 'core' use ATS core strategies, if false use parent.config.")
+	useStrategiesPtr := getopt.EnumLong(useStrategiesFlagName, 0, []string{string(t3cutil.UseStrategiesFlagTrue), string(t3cutil.UseStrategiesFlagCore), string(t3cutil.UseStrategiesFlagFalse), ""}, "", "[true | core| false] whether to generate config using strategies.yaml instead of parent.config. If true use the parent_select plugin, if 'core' use ATS core strategies, if false use parent.config.")
 
 	const runModeFlagName = "run-mode"
 	runModePtr := getopt.StringLong(runModeFlagName, 'm', "", `[badass | report | revalidate | syncds] run mode. Optional, convenience flag which sets other flags for common usage scenarios.
