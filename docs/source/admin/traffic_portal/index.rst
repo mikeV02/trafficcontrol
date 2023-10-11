@@ -27,7 +27,7 @@ Installing
 	.. code-block:: bash
 		:caption: Installing NodeJS using the NodeSource Setup Script
 
-		curl --silent --location https://rpm.nodesource.com/setup_12.x | sudo bash -
+		curl --silent --location https://rpm.nodesource.com/setup_18.x | sudo bash -
 
 #. Install the Traffic Portal RPM with :manpage:`yum(8)` or :manpage:`rpm(8)` e.g. by running ``yum install path/to/traffic_portal.rpm`` as the root user or with :manpage:`sudo(8)`.
 
