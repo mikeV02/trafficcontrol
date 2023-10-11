@@ -54,16 +54,16 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 			brotli \
 			brotli-devel \
 			curl \
-			gcc-toolset-9 \
-			gcc-toolset-9-runtime \
+			gcc-toolset-11 \
+			gcc-toolset-11-runtime \
 			jansson \
 			jansson-devel \
 			libmaxminddb \
 			libmaxminddb-devel); \
-		os_toolset="gcc-toolset-9"; \
+		os_toolset="gcc-toolset-11"; \
 	else \
-		os_pkgs=(devtoolset-7); \
-		os_toolset="devtoolset-7"; \
+		os_pkgs=(devtoolset-11 curl jansson jansson-devel libmaxminddb libmaxminddb-devel); \
+		os_toolset="devtoolset-11"; \
 	fi \
 	&& yum install -y \
 		${os_pkgs[*]} \
@@ -106,10 +106,10 @@ COPY	run.sh /run.sh
 COPY	trafficserver.spec /rpmbuilddir/SPECS/trafficserver.spec
 RUN	/usr/sbin/useradd -u 176 -r ats -s /sbin/nologin -d /
 CMD if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
-		os_toolset=gcc-toolset-9; \
+		os_toolset=gcc-toolset-11; \
 		openssl_included='--without_openssl'; \
 	else \
-		os_toolset=devtoolset-7; \
+		os_toolset=devtoolset-11; \
 		openssl_included='--with_openssl'; \
 	fi \
 	&& set -o pipefail; scl enable ${os_toolset} "./run.sh ${openssl_included}" 2>&1 | tee /rpmbuilddir/RPMS/build-trafficserver.log
