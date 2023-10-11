@@ -43,7 +43,6 @@ jobs:
         sed -E 's/RHEL_VERSION:-8/RHEL_VERSION:-7/' -i traffic_server/_tsb/docker-compose.yml
         sed -E 's/BASE_IMAGE=rockylinux/BASE_IMAGE=centos/' -i traffic_server/_tsb/Dockerfile
         sed -E 's/RHEL_VERSION=8/RHEL_VERSION=7/' -i traffic_server/_tsb/Dockerfile
-        sed -E 's/os_pkgs\=\(devtoolset-7\)/os_pkgs\=\(devtoolset-7 curl jansson jansson-devel libmaxminddb libmaxminddb-devel\)/' -i traffic_server/_tsb/Dockerfile
         sed -E "s/\%\{distance\}\.\%\{commit\}\%\{\?dist\}/\%\{distance\}\.$atscommit\%\{\?dist\}/" -i traffic_server/_tsb/trafficserver.spec
         ./pkg -7 -b -v -L -S -o ats
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL7" >> $GITHUB_ENV

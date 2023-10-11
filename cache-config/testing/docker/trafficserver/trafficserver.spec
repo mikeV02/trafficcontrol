@@ -25,7 +25,6 @@
 %global commit %(git %{git_args} describe --long --tags --match='*[0-9.][0-9.][0-9.]' |   sed 's/^\\\(.*\\\)-\\\([0-9]\\\+\\\)-g\\\([0-9a-f]\\\+\\\)$/\\\3/')
 %global git_serial %(git %{git_args} rev-list HEAD | wc -l)
 %global install_prefix "/opt"
-%global api_stats "4096"
 %global _find_debuginfo_dwz_opts %{nil}
 %{!?_with_openssl_included: %{!?_without_openssl_included: %define _without_openssl_included --without-openssl_included}}
 %{?_with_openssl_included: %{?_without_openssl_included: %{error: both _with_openssl_included and _without_openssl_included}}}
@@ -57,9 +56,9 @@ autoreconf -vfi
 
 %build
 %if %{?_with_openssl_included:1}%{!?_with_openssl_included:0}
-./configure --with-openssl=/opt/trafficserver/openssl --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --with-max-api-stats=%{api_stats} --disable-unwind
+./configure --with-openssl=/opt/trafficserver/openssl --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --disable-tests --disable-unwind
 %else
-./configure --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --with-max-api-stats=%{api_stats} --disable-unwind
+./configure --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --disable-tests --disable-unwind
 %endif
 make %{?_smp_mflags}
 %if %{?_with_openssl_included:1}%{!?_with_openssl_included:0}
