@@ -35,7 +35,7 @@ jobs:
         export atscommit="$(git rev-parse --short=8 HEAD)"
         ./pkg -8 -v -L -S traffic_monitor_build traffic_ops_build cache-config_build \
         traffic_portal_build traffic_router_build traffic_stats_build
-        sed -E "s/\%\{distance\}\.\%\{commit\}\%\{\?dist\}/\%\{distance\}\.$atscommit\%\{\?dist\}/" -i traffic_server/_tsb/trafficserver.spec
+        sed -E "s/\%global\s+commit.*$/\%global commit $atscommit/" -i traffic_server/_tsb/trafficserver.spec
         ./pkg -8 -b -v -L -S -o ats
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL8" >> $GITHUB_ENV
         echo "::set-output name=status::success"
