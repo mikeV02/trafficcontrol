@@ -223,6 +223,7 @@ func MakeRemapDotConfig(toData *t3cutil.ConfigData, fileName string, hdrCommentT
 	remapAndCacheKeyParams = append(remapAndCacheKeyParams, toData.CacheKeyConfigParams...)
 	return atscfg.MakeRemapDotConfig(
 		toData.Server,
+		toData.Servers,
 		toData.DeliveryServices,
 		toData.DeliveryServiceServers,
 		toData.DeliveryServiceRegexes,
