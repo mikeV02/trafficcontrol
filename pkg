@@ -108,6 +108,10 @@ while getopts h78abdf:lopqvsSL opt; do
 			BASE_IMAGE=rockylinux
 			RHEL_VERSION=8
 			;;
+			9)
+			BASE_IMAGE=rockylinux
+			RHEL_VERSION=9
+			;;
 		a)
 			all=1
 			;;
@@ -162,7 +166,8 @@ PROJECTS=$(grep -E "^weasel$" <<<"$CMD"; grep -Ev "^weasel$"<<<"$CMD")
 HELP_TEXT="$(cat <<HELP_TEXT
 Usage: $SELF [options] [projects]
   -7           Build RPMs targeting CentOS 7
-  -8           Build RPMs targeting Rocky Linux 8 (default)
+  -8           Build RPMs targeting Rocky Linux 8
+  -9           Build RPMs targeting Rocky Linux 9 (default)
   -a           Build all projects, including optional ones.
   -b           Build builder Docker images before building projects
   -d           Disable compiler optimizations for debugging.
