@@ -25,9 +25,13 @@ ARG RHEL_VERSION=9
 MAINTAINER dev@trafficcontrol.apache.org
 
 ### Common for all sub-component builds
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 		yum install -y 'dnf-command(config-manager)'; \
-		yum config-manager --set-enabled powertools; \
+        yum config-manager --set-enabled powertools; \
+		
+	elif [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+        yum install -y 'dnf-command(config-manager)'; \
+		yum config-manager --set-enabled crb; \
 	else \
 		yum install -y deltarpm centos-release-scl-rh; \
 		yum-config-manager --enable rhel-server-rhscl-7-rpms; \
@@ -49,24 +53,30 @@ ARG RHEL_VERSION=9
 # Makes RHEL_VERSION accessible to CMD
 ENV RHEL_VERSION="$RHEL_VERSION"
 
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 		os_pkgs=( \
 			brotli \
 			brotli-devel \
 			curl \
 			gcc-toolset-11 \
 			gcc-toolset-11-runtime \
-			jansson \
-			jansson-devel \
-			libmaxminddb \
-			libmaxminddb-devel); \
+			jansson); \
 		os_toolset="gcc-toolset-11"; \
+	elif [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+                os_pkgs=( \
+                        brotli \
+                        brotli-devel \
+                        curl \
+                        gcc \
+                        jansson \
+                        jansson-devel); \
 	else \
-		os_pkgs=(devtoolset-11 curl jansson jansson-devel libmaxminddb libmaxminddb-devel); \
-		os_toolset="devtoolset-11"; \
+		os_pkgs=(devtoolset-11 curl jansson jansson-devel); \
 	fi \
-	&& yum install -y \
+	&& yum --allowerasing install -y \
 		${os_pkgs[*]} \
+		libmaxminddb \
+		libmaxminddb-devel \
 		autoconf \
 		automake \
 		ed \
@@ -96,6 +106,7 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 		perl-URI \
 		pkgconfig \
 		python3 \
+		python3-pip \
 		sudo \
 		tcl-devel \
 		zlib \
@@ -105,11 +116,15 @@ RUN	pip3 install --user Sphinx
 COPY	run.sh /run.sh
 COPY	trafficserver.spec /rpmbuilddir/SPECS/trafficserver.spec
 RUN	/usr/sbin/useradd -u 176 -r ats -s /sbin/nologin -d /
-CMD if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+CMD if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 		os_toolset=gcc-toolset-11; \
 		openssl_included='--without_openssl'; \
+		scl enable ${os_toolset}; \
+	elif [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+        openssl_included='--without_openssl'; \
 	else \
 		os_toolset=devtoolset-11; \
 		openssl_included='--with_openssl'; \
+		scl enable ${os_toolset}; \
 	fi \
-	&& set -o pipefail; scl enable ${os_toolset} "./run.sh ${openssl_included}" 2>&1 | tee /rpmbuilddir/RPMS/build-trafficserver.log
+	&& set -o pipefail; ./run.sh ${openssl_included} 2>&1 | tee /rpmbuilddir/RPMS/build-trafficserver.log

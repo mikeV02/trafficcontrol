@@ -39,9 +39,12 @@ RUN rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
 	yum -y clean all
 
 # CentOS 7 has pandoc in epel (which we installed above), 8 has it in [pP]ower[tT]ools
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 		yum -y install dnf-plugins-core && \
-		(yum -y config-manager --set-enabled PowerTools || yum -y config-manager --set-enabled powertools) \
+		(yum -y config-manager --set-enabled PowerTools || yum -y config-manager --set-enabled powertools); \
+	if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+                yum -y install dnf-plugins-core && \
+                yum config-manager --set-enabled crb; \
 	fi && \
 	yum -y install pandoc
 
