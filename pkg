@@ -95,7 +95,7 @@ SIMPLE=0
 list=0
 failure=0
 print_help=0
-while getopts h78abdf:lopqvsSL opt; do
+while getopts h789abdf:lopqvsSL opt; do
 	case $opt in
 		\?)
 			failure=1;
@@ -106,9 +106,9 @@ while getopts h78abdf:lopqvsSL opt; do
 			;;
 		8)
 			BASE_IMAGE=rockylinux
-			RHEL_VERSION=9
+			RHEL_VERSION=8
 			;;
-			9)
+		9)
 			BASE_IMAGE=rockylinux
 			RHEL_VERSION=9
 			;;
