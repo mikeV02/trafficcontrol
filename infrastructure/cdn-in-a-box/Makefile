@@ -18,11 +18,11 @@
 ############################################################
 # Dockerfile to build Edge-Tier Cache container images for
 # Apache Traffic Control
-# Based on Rocky Linux 8
+# Based on Rocky Linux 9
 ############################################################
 
 ifeq ($(RHEL_VERSION),)
-	export RHEL_VERSION := 8
+	export RHEL_VERSION := 9
 else
 	RHEL_VERSION := $(shell echo $(RHEL_VERSION) | cut -f1 -d.)
 endif

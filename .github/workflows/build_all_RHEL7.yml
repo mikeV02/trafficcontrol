@@ -36,13 +36,13 @@ jobs:
         ./pkg -7 -v -L -S traffic_monitor_build traffic_ops_build cache-config_build \
         traffic_portal_build traffic_router_build traffic_stats_build
         sed -E 's/BASE_IMAGE:-rockylinux/BASE_IMAGE:-centos/' -i infrastructure/docker/build/docker-compose-opt.yml
-        sed -E 's/RHEL_VERSION:-8/RHEL_VERSION:-7/' -i infrastructure/docker/build/docker-compose-opt.yml
+        sed -E 's/RHEL_VERSION:-9/RHEL_VERSION:-7/' -i infrastructure/docker/build/docker-compose-opt.yml
         sed -E 's/BASE_IMAGE=rockylinux/BASE_IMAGE=centos/' -i infrastructure/docker/build/Dockerfile-tsb
-        sed -E 's/RHEL_VERSION=8/RHEL_VERSION=7/' -i infrastructure/docker/build/Dockerfile-tsb
+        sed -E 's/RHEL_VERSION=9/RHEL_VERSION=7/' -i infrastructure/docker/build/Dockerfile-tsb
         sed -E 's/BASE_IMAGE:-rockylinux/BASE_IMAGE:-centos/' -i traffic_server/_tsb/docker-compose.yml
-        sed -E 's/RHEL_VERSION:-8/RHEL_VERSION:-7/' -i traffic_server/_tsb/docker-compose.yml
+        sed -E 's/RHEL_VERSION:-9/RHEL_VERSION:-7/' -i traffic_server/_tsb/docker-compose.yml
         sed -E 's/BASE_IMAGE=rockylinux/BASE_IMAGE=centos/' -i traffic_server/_tsb/Dockerfile
-        sed -E 's/RHEL_VERSION=8/RHEL_VERSION=7/' -i traffic_server/_tsb/Dockerfile
+        sed -E 's/RHEL_VERSION=9/RHEL_VERSION=7/' -i traffic_server/_tsb/Dockerfile
         sed -E "s/\%global\s+commit.*$/\%global commit $atscommit/" -i traffic_server/_tsb/trafficserver.spec
         ./pkg -7 -b -v -L -S -o ats
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL7" >> $GITHUB_ENV

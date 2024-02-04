@@ -22,9 +22,9 @@
 
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as trafficops-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION available in later layers without needing to specify it again
 ENV RHEL_VERSION="$RHEL_VERSION"
 

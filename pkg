@@ -106,7 +106,7 @@ while getopts h78abdf:lopqvsSL opt; do
 			;;
 		8)
 			BASE_IMAGE=rockylinux
-			RHEL_VERSION=8
+			RHEL_VERSION=9
 			;;
 			9)
 			BASE_IMAGE=rockylinux

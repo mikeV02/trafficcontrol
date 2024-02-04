@@ -23,9 +23,9 @@
 
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} AS common-traffic-server-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION available at runtime
 ENV RHEL_VERSION="$RHEL_VERSION"
 

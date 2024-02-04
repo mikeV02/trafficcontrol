@@ -17,7 +17,7 @@
 
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as tsb-build
 RUN yum clean all && yum -y install git
 COPY GO_VERSION /

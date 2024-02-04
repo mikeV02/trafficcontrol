@@ -19,7 +19,7 @@
 # Dockerfile to build Traffic Server RPM
 ###############################################################
 
-ARG OS_VERSION=8
+ARG OS_VERSION=9
 ARG OS_DISTRO=rockylinux
 FROM ${OS_DISTRO}:${OS_VERSION}
 ARG OS_VERSION

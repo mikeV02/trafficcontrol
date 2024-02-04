@@ -18,9 +18,9 @@
 # SPDX-License-Identifier: Apache-2.0
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as ats-common-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 
 MAINTAINER dev@trafficcontrol.apache.org
 
@@ -45,7 +45,7 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 
 ### ats specific requirements
 FROM ats-common-dependencies AS build-ats-specific
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION accessible to CMD
 ENV RHEL_VERSION="$RHEL_VERSION"
 
