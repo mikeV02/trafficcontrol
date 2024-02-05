@@ -40,10 +40,10 @@ RUN rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
 ### traffic_router specific requirements
 FROM common-dependencies AS traffic-router
 
-RUN	yum -y install \
+RUN	yum -y --allowerasing install \
 		which  \
 		curl \
-		java-11-openjdk \
+		java-11-openjdk-headless \
 		java-11-openjdk-devel && \
 	yum -y clean all
 

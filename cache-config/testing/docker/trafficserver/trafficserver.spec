@@ -40,7 +40,7 @@ Group:		Applications/Communications
 License:	Apache License, Version 2.0
 URL:		https://github.com/apache/trafficserver
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Requires:	tcl, hwloc, pcre, libcap, openssl, libmaxminddb, GeoIP
+Requires:	tcl, hwloc, pcre, libcap, openssl, libmaxminddb
 BuildRequires:	autoconf, automake, libtool, gcc-c++, glibc-devel, expat-devel, pcre, libcap-devel, pcre-devel, perl-ExtUtils-MakeMaker, tcl-devel, hwloc-devel
 Source: src
 

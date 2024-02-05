@@ -41,9 +41,12 @@ RUN rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
 FROM common-dependencies AS docs
 ARG RHEL_VERSION=9
 
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 		yum -y install dnf-plugins-core && \
 		yum config-manager --set-enabled powertools; \
+	elif [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+                yum -y install dnf-plugins-core && \
+                yum config-manager --set-enabled crb; \
 	fi
 
 ADD docs/source/requirements.txt /docs.requirements.txt
