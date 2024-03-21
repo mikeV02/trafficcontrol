@@ -419,20 +419,17 @@ func getServerConfigRemapDotConfigForMid(
 		if !isLastCache {
 			defaultParamName = RemapConfigTemplateInner
 		}
-		tmplparams, tmplok := dsConfigParamsMap[defaultParamName]
 
 		// check for fallthrough condition or override template
-		if remapTags.AnyMidOptionsSet() || tmplok {
+		if tmplparams, ok := dsConfigParamsMap[defaultParamName]; ok || remapTags.AnyMidOptionsSet() {
 
 			// Check for ds parameter template override
 			var template *mustache.Template
-			if tmplok {
-				if 0 < len(tmplparams) {
-					templateString := tmplparams[0].Value
-					template, err = RemapLineTemplates.parse(templateString)
-					if err != nil {
-						warnings = append(warnings, "Error decoding override "+defaultParamName+" "+templateString+" for DS "+*ds.XMLID+", falling back!")
-					}
+			if 0 < len(tmplparams) {
+				templateString := tmplparams[0].Value
+				template, err = RemapLineTemplates.parse(templateString)
+				if err != nil {
+					warnings = append(warnings, "Error decoding override "+defaultParamName+" "+templateString+" for DS "+*ds.XMLID+", falling back!")
 				}
 			}
 
