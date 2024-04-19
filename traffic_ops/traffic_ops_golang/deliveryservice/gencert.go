@@ -30,16 +30,18 @@ import (
 	"errors"
 	"math/big"
 	"time"
+	"fmt"
 
 	"github.com/apache/trafficcontrol/lib/go-util"
 )
 
-const NewCertValidDuration = time.Hour * 24 * 365
+const NewCertValidDuration = time.Hour * 24 * 3600
 
 // GenerateCert generates a key and certificate for serving HTTPS. The generated key is 2048-bit RSA, to match the old Perl code.
 // The certificate will be valid for NewCertValidDuration time after now.
 // Returns PEM-encoded certificate signing request (csr), certificate (crt), and key; or any error.
 func GenerateCert(host, country, city, state, org, unit string) ([]byte, []byte, []byte, error) {
+	fmt.Print("MIKE1, " + string(NewCertValidDuration))
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, nil, nil, errors.New("generating key: " + err.Error())
