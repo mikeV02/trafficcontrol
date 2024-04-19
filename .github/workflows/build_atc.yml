@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Build and Release
+name: Build and Release ATC EL7
 
 on:
   workflow_dispatch:
@@ -32,16 +32,11 @@ jobs:
     
     - name: Build Installer Packagers
       run: |
-        ./pkg -7 -v -L -S traffic_monitor_build traffic_ops_build cache-config_build \
+        export BASE_IMAGE=centos
+        export RHEL_VERSION=7
+        ./pkg -7 -v -b -L -S traffic_monitor_build traffic_ops_build cache-config_build \
         traffic_portal_build traffic_router_build traffic_stats_build
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
-        echo "::set-output name=status::success"
-        
-    - name: Deb Package
-      run: |
-        sudo apt install fakeroot alien
-        cd dist
-        fakeroot alien --scripts --verbose --keep-version trafficcontrol-cache-config*
         echo "::set-output name=status::success"
         
     - name: Publish Release
