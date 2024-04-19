@@ -236,6 +236,7 @@ func generateDerCert(privateKey *rsa.PrivateKey, expiration time.Time, domain st
 
 	if expiration.IsZero() {
 		expiration = time.Now().Add(365)
+		fmt.Print("Mike " + expiration.String())
 	}
 
 	template := x509.Certificate{
