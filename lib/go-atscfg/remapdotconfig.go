@@ -414,6 +414,8 @@ func getServerConfigRemapDotConfigForMid(
 
 		remapTags.Destination = mapTo
 
+		remapTags.Strategy = strategyDirective("strategy-" + *ds.XMLID, configDir, opts)
+
 		// look for override template
 		defaultParamName := RemapConfigTemplateLast
 		if !isLastCache {
@@ -750,6 +752,8 @@ func buildEdgeRemapLine(
 	if ds.FQPacingRate != nil && *ds.FQPacingRate > 0 {
 		remapTags.Pacing = `@plugin=fq_pacing.so @pparam=--rate=` + strconv.Itoa(*ds.FQPacingRate)
 	}
+
+	remapTags.Strategy = strategyDirective("strategy-" + *ds.XMLID, configDir, opts)
 
 	// Check for ds parameter template override
 	var template *mustache.Template
