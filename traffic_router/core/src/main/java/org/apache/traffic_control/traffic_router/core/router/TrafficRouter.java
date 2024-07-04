@@ -78,7 +78,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+//import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -126,7 +126,7 @@ public class TrafficRouter {
 	private final int edgeDNSRoutingLimit;
 	private final int edgeHTTPRoutingLimit;
 
-	private final Random random = new Random(System.nanoTime());
+	//private final Random random = new Random(System.nanoTime());
 	private Set<String> requestHeaders = new HashSet<String>();
 	private static final Geolocation GEO_ZERO_ZERO = new Geolocation(0, 0);
 	private ApplicationContext applicationContext;
@@ -862,7 +862,7 @@ public class TrafficRouter {
 			 * for maxDnsIps so that we ensure we are spreading load across all caches
 			 * assigned to this delivery service.
 			*/
-			Collections.shuffle(caches, random);
+			//Collections.shuffle(caches, random);
 
 			selectedCaches = new ArrayList<Cache>();
 
