@@ -38,6 +38,7 @@ jobs:
         sed -E "s/\%global\s+commit.*$/\%global commit $atscommit/" -i traffic_server/_tsb/trafficserver.spec
         ./pkg -9 -v -b -L -S -o ats
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL9" >> $GITHUB_ENV
+        echo "atscommit=$(git rev-parse HEAD)" >> $GITHUB_ENV
         echo "::set-output name=status::success"
         
     # - name: Deb Package
@@ -46,20 +47,14 @@ jobs:
     #     cd dist
     #     fakeroot alien --scripts --verbose --keep-version trafficcontrol-cache-config*
     #     echo "::set-output name=status::success"
-        
-    - name: Publish Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.PACKAGED_OUTPUTDATE }}
-        body: ${{ env.PACKAGED_OUTPUTDATE }}
-        files: dist/*
 
-    # - name: Remove old Releases
-    #   uses: dev-drprasad/delete-older-releases@v0.2.0
-    #   with:
-    #     keep_latest: 2
-    #     delete_tags: true
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish Release    
+      uses: ncipollo/release-action@v1.14.0
+      with:
+        tag: 7.0.1_RHEL9_RELEASE
+        body: "${{ env.PACKAGED_OUTPUTDATE }}
+
+        HEAD Commit: https://github.com/mikeV02/trafficcontrol/commit/${{ env.atscommit }}
+        "
+        allowUpdates: true
+        artifacts: dist/*
