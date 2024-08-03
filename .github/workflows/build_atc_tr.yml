@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Build and Release ATS EL9
+name: Build and Release TR RHEL9
 
 on:
   workflow_dispatch:
@@ -32,8 +32,8 @@ jobs:
     
     - name: Build Installer Packagers
       run: |
-        ./pkg -9 -b -v -L -S -o ats
-        echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
+        ./pkg -9 -v -b -L -S traffic_router_build
+        echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")_RHEL9" >> $GITHUB_ENV
         echo "atscommit=$(git rev-parse HEAD)" >> $GITHUB_ENV
         rm -f dist/*.src.rpm
         echo "::set-output name=status::success"
