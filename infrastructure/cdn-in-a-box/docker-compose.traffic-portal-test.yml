@@ -24,7 +24,7 @@
 # docker-compose -f docker-compose.traffic-portal-test.yml logs -f portal-integration-test
 
 ---
-version: '3.8'
+version: '3.0'
 
 services:
   portal-integration-test:
@@ -34,7 +34,7 @@ services:
       args:
         # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
-        RHEL_VERSION: ${RHEL_VERSION:-8}
+        RHEL_VERSION: ${RHEL_VERSION:-9}
     env_file:
       - variables.env
     environment:

@@ -18,16 +18,16 @@
 # SPDX-License-Identifier: Apache-2.0
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as ats-common-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 
 MAINTAINER dev@trafficcontrol.apache.org
 
 ### Common for all sub-component builds
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
-		yum install -y 'dnf-command(config-manager)'; \
-		yum config-manager --set-enabled powertools; \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
+	yum install -y 'dnf-command(config-manager)'; \
+		yum config-manager --set-enabled crb; \
 	else \
 		yum install -y deltarpm centos-release-scl-rh; \
 		yum-config-manager --enable rhel-server-rhscl-7-rpms; \
@@ -37,36 +37,33 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 	yum -y clean all && \
 	yum -y update ca-certificates && \
 	yum -y install \
-		git \
-		rpm-build \
-		rsync \
-		epel-release && \
+			git \
+			rpm-build \
+			rsync \
+			epel-release && \
 	yum -y clean all
 
 ### ats specific requirements
 FROM ats-common-dependencies AS build-ats-specific
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION accessible to CMD
 ENV RHEL_VERSION="$RHEL_VERSION"
 
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
 		os_pkgs=( \
-			brotli \
-			brotli-devel \
-			curl \
-			gcc-toolset-9 \
-			gcc-toolset-9-runtime \
-			jansson \
-			jansson-devel \
-			libmaxminddb \
-			libmaxminddb-devel); \
-		os_toolset="gcc-toolset-9"; \
+				brotli \
+				brotli-devel \
+				curl \
+				gcc \
+				jansson \
+				jansson-devel); \
 	else \
-		os_pkgs=(devtoolset-7); \
-		os_toolset="devtoolset-7"; \
+		os_pkgs=(devtoolset-11 curl jansson jansson-devel); \
 	fi \
-	&& yum install -y \
+	&& yum --allowerasing install -y \
 		${os_pkgs[*]} \
+		libmaxminddb \
+		libmaxminddb-devel \
 		autoconf \
 		automake \
 		ed \
@@ -96,6 +93,7 @@ RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
 		perl-URI \
 		pkgconfig \
 		python3 \
+		python3-pip \
 		sudo \
 		tcl-devel \
 		zlib \
@@ -105,11 +103,7 @@ RUN	pip3 install --user Sphinx
 COPY	run.sh /run.sh
 COPY	trafficserver.spec /rpmbuilddir/SPECS/trafficserver.spec
 RUN	/usr/sbin/useradd -u 176 -r ats -s /sbin/nologin -d /
-CMD if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
-		os_toolset=gcc-toolset-9; \
+CMD if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
 		openssl_included='--without_openssl'; \
-	else \
-		os_toolset=devtoolset-7; \
-		openssl_included='--with_openssl'; \
 	fi \
-	&& set -o pipefail; scl enable ${os_toolset} "./run.sh ${openssl_included}" 2>&1 | tee /rpmbuilddir/RPMS/build-trafficserver.log
+	&& set -o pipefail; ./run.sh ${openssl_included} 2>&1 | tee /rpmbuilddir/RPMS/build-trafficserver.log

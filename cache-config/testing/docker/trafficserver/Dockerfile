@@ -19,9 +19,9 @@
 # Dockerfile to build Traffic Server RPM
 ###############################################################
 
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 FROM centos:${RHEL_VERSION}
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION available in later layers without needing to specify it again
 ENV RHEL_VERSION=$RHEL_VERSION
 
@@ -33,7 +33,7 @@ RUN echo "Image Version: ${RHEL_VERSION}"
 
 ### Common for all sub-component builds
 RUN set -o errexit; \
-    if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+    if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
 		rpm_gpg_key=RPM-GPG-KEY-centosofficial; \
 		yum install -y 'dnf-command(config-manager)'; \
 		yum config-manager --set-enabled powertools; \
@@ -53,7 +53,7 @@ RUN set -o errexit; \
 		epel-release && \
 	yum -y clean all
 
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
 		os_pkgs=( \
 			brotli \
 			brotli-devel \

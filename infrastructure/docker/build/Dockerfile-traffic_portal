@@ -16,9 +16,9 @@
 # under the License.
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as common-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 
 MAINTAINER dev@trafficcontrol.apache.org
 
@@ -40,7 +40,7 @@ RUN rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
 ### traffic_portal specific
 FROM common-dependencies AS traffic-portal
 
-RUN	curl -sL https://rpm.nodesource.com/setup_12.x | bash - && \
+RUN	curl -sL https://rpm.nodesource.com/setup_18.x | bash - && \
 	yum -y install \
 		make \
 		nodejs && \

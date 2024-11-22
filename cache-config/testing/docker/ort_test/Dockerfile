@@ -23,9 +23,9 @@
 # The recommended minimum size for each block devices is 1G.
 # For example, `sudo modprobe brd rd_size=1048576 rd_nr=2`
 
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 FROM centos:${RHEL_VERSION}
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 # Makes RHEL_VERSION available in later layers without needing to specify it again
 ENV RHEL_VERSION=$RHEL_VERSION
 MAINTAINER dev@trafficcontrol.apache.org

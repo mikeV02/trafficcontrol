@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Build and Release ATC EL7
+name: Build and Release ATC EL9
 
 on:
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
       run: |
         export BASE_IMAGE=centos
         export RHEL_VERSION=7
-        ./pkg -7 -v -b -L -S traffic_monitor_build traffic_ops_build cache-config_build \
+        ./pkg -9 -v -b -L -S traffic_monitor_build traffic_ops_build cache-config_build \
         traffic_portal_build traffic_router_build traffic_stats_build
         echo "PACKAGED_OUTPUTDATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
         echo "::set-output name=status::success"

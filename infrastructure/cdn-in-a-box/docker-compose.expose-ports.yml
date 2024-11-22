@@ -21,7 +21,7 @@
 #
 
 ---
-version: '3.8'
+version: '3.0'
 
 services:
   db:
