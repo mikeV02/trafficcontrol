@@ -16,9 +16,9 @@
 # under the License.
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} as common-dependencies
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 
 MAINTAINER dev@trafficcontrol.apache.org
 
@@ -39,9 +39,9 @@ RUN rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
 	yum -y clean all
 
 # CentOS 7 has pandoc in epel (which we installed above), 8 has it in [pP]ower[tT]ools
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]]; then \
+RUN if [[ ${RHEL_VERSION%%.*} -ge 9 ]]; then \
 		yum -y install dnf-plugins-core && \
-		(yum -y config-manager --set-enabled PowerTools || yum -y config-manager --set-enabled powertools) \
+		yum -y config-manager --set-enabled crb; \
 	fi && \
 	yum -y install pandoc
 

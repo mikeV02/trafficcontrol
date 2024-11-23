@@ -18,7 +18,7 @@
 #
 
 ---
-version: '3.8'
+version: '3.0'
 
 volumes:
   trafficcontrol:
@@ -39,6 +39,6 @@ services:
       context: ../../..
       dockerfile: cache-config/testing/docker/trafficserver/Dockerfile
       args:
-        RHEL_VERSION: ${RHEL_VERSION:-8}
+        RHEL_VERSION: ${RHEL_VERSION:-9}
     volumes:
       - ../../..:/trafficcontrol:z

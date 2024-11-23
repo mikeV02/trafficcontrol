@@ -22,15 +22,15 @@
 
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
-    RHEL_VERSION=8
+    RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION}
-ARG RHEL_VERSION=8
+ARG RHEL_VERSION=9
 
 RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
         yum -y install dnf || exit 1; \
     fi
 
-RUN curl -sL https://rpm.nodesource.com/setup_12.x | bash -
+RUN curl -sL https://rpm.nodesource.com/setup_18.x | bash -
 
 # Override TRAFFIC_PORTAL_RPM arg to use a different one using --build-arg TRAFFIC_PORTAL_RPM=...  Can be local file or http://...
 ARG TRAFFIC_PORTAL_RPM=traffic_portal/traffic_portal.rpm

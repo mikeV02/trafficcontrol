@@ -61,6 +61,7 @@ if [ -d "${tc_volume}/.git" ] && [ ! -d ${tc_dir}/.git ]; then
 fi
 
 cd "$tc_dir"
+git config --global --add safe.directory "$tc_dir"
 if [ -d "${tc_volume}/.git" ]; then
 	# In case the mirrored repo already exists, remove gitignored files
 	git clean -fdX

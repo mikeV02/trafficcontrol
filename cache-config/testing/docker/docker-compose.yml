@@ -27,7 +27,7 @@
 #
 
 ---
-version: '3.8'
+version: '3.0'
 
 volumes:
   trafficcontrol:
@@ -82,7 +82,7 @@ services:
       - variables.env
     build:
       args:
-        RHEL_VERSION: ${RHEL_VERSION:-8}
+        RHEL_VERSION: ${RHEL_VERSION:-9}
       context: .
       dockerfile: ort_test/Dockerfile
     cap_add: ['SYS_ADMIN'] # necessary for hostname tests

@@ -21,8 +21,6 @@
 %global src %{_topdir}/SOURCES/src
 %global git_args --git-dir="%{src}/.git" --work-tree="%{src}"
 %global tag %(git %{git_args} describe --long |      sed 's/^\\\(.*\\\)-\\\([0-9]\\\+\\\)-g\\\([0-9a-f]\\\+\\\)$/\\\1/' | sed 's/-/_/')
-%global distance %(git %{git_args} describe --long | sed 's/^\\\(.*\\\)-\\\([0-9]\\\+\\\)-g\\\([0-9a-f]\\\+\\\)$/\\\2/')
-%global commit %(git %{git_args} describe --long |   sed 's/^\\\(.*\\\)-\\\([0-9]\\\+\\\)-g\\\([0-9a-f]\\\+\\\)$/\\\3/')
 %global git_serial %(git %{git_args} rev-list HEAD | wc -l)
 %global install_prefix "/opt"
 %global api_stats "4096"
@@ -37,7 +35,7 @@
 Name:		trafficserver
 Version:	%{tag}
 Epoch:		%{git_serial}
-Release:	%{distance}.%{commit}%{?dist}
+Release:	%{build_number}%{?dist}
 Summary:	Apache Traffic Server
 Vendor:		Apache
 Group:		Applications/Communications

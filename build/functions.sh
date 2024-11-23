@@ -184,7 +184,8 @@ checkEnvironment() {
 
 	TC_VERSION='' BUILD_NUMBER='' RPMBUILD='' DIST=''
 	TC_VERSION="$(getVersion "$TC_DIR")"
-	BUILD_NUMBER="$(getBuildNumber)"
+	#BUILD_NUMBER="$(getBuildNumber)"
+	BUILD_NUMBER=$(date +"%Y.%m.%d.%H")
 	GO_VERSION="$(getGoVersion "$TC_DIR")"
 	RHEL_VERSION="$(getRhelVersion)"
 	WORKSPACE="${WORKSPACE:-$TC_DIR}"
