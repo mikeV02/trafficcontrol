@@ -41,6 +41,7 @@ const ParentConfigFileName = "parent.config"
 const ParentConfigParamQStringHandling = "psel.qstring_handling"
 const ParentConfigParamMSOAlgorithm = "mso.algorithm"
 const ParentConfigParamMSOParentRetry = "mso.parent_retry"
+const ParentConfigParamMSOSimpleRetryResponses = "mso.simple_server_retry_responses"
 const ParentConfigParamMSOUnavailableServerRetryResponses = "mso.unavailable_server_retry_responses"
 const ParentConfigParamMSOMaxSimpleRetries = "mso.max_simple_retries"
 const ParentConfigParamMSOMaxUnavailableServerRetries = "mso.max_unavailable_server_retries"
@@ -50,12 +51,14 @@ const ParentConfigParamQString = "qstring"
 const ParentConfigParamSecondaryMode = "try_all_primaries_before_secondary"
 
 const ParentConfigParamParentRetry = "parent_retry"
+const ParentConfigParamSimpleRetryResponses = "simple_server_retry_responses"
 const ParentConfigParamUnavailableServerRetryResponses = "unavailable_server_retry_responses"
 const ParentConfigParamMaxSimpleRetries = "max_simple_retries"
 const ParentConfigParamMaxUnavailableServerRetries = "max_unavailable_server_retries"
 
 const ParentConfigDSParamDefaultMSOAlgorithm = ParentAbstractionServiceRetryPolicyConsistentHash
 const ParentConfigDSParamDefaultMSOParentRetry = "both"
+const ParentConfigDSParamDefaultMSOSimpleRetryResponses = ""
 const ParentConfigDSParamDefaultMSOUnavailableServerRetryResponses = ""
 const ParentConfigDSParamDefaultMaxSimpleRetries = 1
 const ParentConfigDSParamDefaultMaxUnavailableServerRetries = 1
@@ -481,7 +484,7 @@ func makeParentDotConfigData(
 
 				// textLine += parents + secondaryParents + ` round_robin=` + dsParams.Algorithm + ` qstring=` + parentQStr + ` go_direct=false parent_is_proxy=false`
 				prWarns := []string{}
-				textLine.MaxSimpleRetries, textLine.MaxMarkdownRetries, textLine.MarkdownResponseCodes, textLine.ErrorResponseCodes, prWarns = getParentRetryStr(true, atsMajorVer, dsParams.ParentRetry, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+				textLine.MaxSimpleRetries, textLine.MaxMarkdownRetries, textLine.MarkdownResponseCodes, textLine.ErrorResponseCodes, prWarns = getParentRetryStr(true, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleRetryResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
 				warnings = append(warnings, prWarns...)
 
 				parentAbstraction.Services = append(parentAbstraction.Services, textLine)
@@ -804,6 +807,7 @@ const deliveryServicesAllParentsKey = "all_parents"
 type parentDSParams struct {
 	Algorithm                       ParentAbstractionServiceRetryPolicy
 	ParentRetry                     string
+	SimpleRetryResponses            string
 	UnavailableServerRetryResponses string
 	MaxSimpleRetries                string
 	MaxUnavailableServerRetries     string
@@ -824,6 +828,7 @@ func getParentDSParams(ds DeliveryService, profileParentConfigParams map[string]
 	if isMSO {
 		params.Algorithm = ParentConfigDSParamDefaultMSOAlgorithm
 		params.ParentRetry = ParentConfigDSParamDefaultMSOParentRetry
+		params.SimpleRetryResponses = ParentConfigDSParamDefaultMSOSimpleRetryResponses
 		params.UnavailableServerRetryResponses = ParentConfigDSParamDefaultMSOUnavailableServerRetryResponses
 		params.MaxSimpleRetries = strconv.Itoa(ParentConfigDSParamDefaultMaxSimpleRetries)
 		params.MaxUnavailableServerRetries = strconv.Itoa(ParentConfigDSParamDefaultMaxUnavailableServerRetries)
@@ -857,6 +862,13 @@ func getParentDSParams(ds DeliveryService, profileParentConfigParams map[string]
 		if v, ok := dsParams[ParentConfigParamMSOParentRetry]; ok {
 			params.ParentRetry = v
 		}
+		if v, ok := dsParams[ParentConfigParamMSOSimpleRetryResponses]; ok {
+			if v != "" && !unavailableServerRetryResponsesValid(v) {
+				warnings = append(warnings, "DS '"+*ds.XMLID+"' had malformed "+ParentConfigParamMSOSimpleRetryResponses+" parameter '"+v+"', not using!")
+			} else if v != "" {
+				params.SimpleRetryResponses = v
+			}
+		}
 		if v, ok := dsParams[ParentConfigParamMSOUnavailableServerRetryResponses]; ok {
 			if v != "" && !unavailableServerRetryResponsesValid(v) {
 				warnings = append(warnings, "DS '"+*ds.XMLID+"' had malformed "+ParentConfigParamMSOUnavailableServerRetryResponses+" parameter '"+v+"', not using!")
@@ -883,6 +895,13 @@ func getParentDSParams(ds DeliveryService, profileParentConfigParams map[string]
 	}
 	if v, ok := dsParams[ParentConfigParamParentRetry]; ok {
 		params.ParentRetry = v
+	}
+	if v, ok := dsParams[ParentConfigParamSimpleRetryResponses]; ok {
+		if v != "" && !unavailableServerRetryResponsesValid(v) {
+			warnings = append(warnings, "DS '"+*ds.XMLID+"' had malformed "+ParentConfigParamSimpleRetryResponses+" parameter '"+v+"', not using!")
+		} else if v != "" {
+			params.SimpleRetryResponses = v
+		}
 	}
 	if v, ok := dsParams[ParentConfigParamUnavailableServerRetryResponses]; ok {
 		if v != "" && !unavailableServerRetryResponsesValid(v) {
@@ -1019,10 +1038,10 @@ func getTopologyParentConfigLine(
 
 	// TODO convert
 	prWarns := []string{}
-	txt.MaxSimpleRetries, txt.MaxMarkdownRetries, txt.MarkdownResponseCodes, txt.ErrorResponseCodes, prWarns = getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+	txt.MaxSimpleRetries, txt.MaxMarkdownRetries, txt.MarkdownResponseCodes, txt.ErrorResponseCodes, prWarns = getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleRetryResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
 	warnings = append(warnings, prWarns...)
 
-	// txt += getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+	// txt += getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
 	// txt += "\n"
 
 	if dsParams.UsePeering {
@@ -1039,13 +1058,14 @@ func getTopologyParentConfigLine(
 // If atsMajorVer < 6, "" is returned (ATS 5 and below don't support retry directives).
 // If isLastCacheTier is false, "" is returned. This argument exists to simplify usage.
 // If parentRetry is "", "" is returned (because the other directives are unused if parent_retry doesn't exist). This is allowed to simplify usage.
+// If SimpleRetryResponses is not "", it must be valid. Use unavailableServerRetryResponsesValid to check.
 // If unavailableServerRetryResponses is not "", it must be valid. Use unavailableServerRetryResponsesValid to check.
 // If maxSimpleRetries is "", ParentConfigDSParamDefaultMaxSimpleRetries will be used.
 // If maxUnavailableServerRetries is "", ParentConfigDSParamDefaultMaxUnavailableServerRetries will be used.
 //
 // Does not return errors. If any input is malformed, warnings are returned and that value is set to -1.
 //
-func getParentRetryStr(isLastCacheTier bool, atsMajorVer int, parentRetry string, unavailableServerRetryResponses string, maxSimpleRetries string, maxUnavailableServerRetries string) (int, int, []int, []int, []string) {
+func getParentRetryStr(isLastCacheTier bool, atsMajorVer int, parentRetry string, simpleRetryResponses string, unavailableServerRetryResponses string, maxSimpleRetries string, maxUnavailableServerRetries string) (int, int, []int, []int, []string) {
 	warnings := []string{}
 	if !isLastCacheTier || // allow !isLastCacheTier, to simplify usage.
 		parentRetry == "" || // allow parentRetry to be empty, to simplify usage.
@@ -1080,13 +1100,11 @@ func getParentRetryStr(isLastCacheTier bool, atsMajorVer int, parentRetry string
 		unavailableServerRetryResponsesInts = []int{}
 	}
 
-	simpleRetryResponsesInts := []int{}
-	// TODO add support for 9.1
-	// simpleRetryResponsesInts, err := ParseRetryResponses(simpleRetryResponses)
-	// if err != nil {
-	// 	warnings = append(warnings, "malformed simpleRetryResponses '"+simpleRetryResponses+"', using default")
-	// 	simpleRetryResponsesInts = []int{}
-	// }
+	simpleRetryResponsesInts, err := ParseRetryResponses(simpleRetryResponses)
+	if err != nil {
+		warnings = append(warnings, "malformed simpleRetryResponses '"+simpleRetryResponses+"', using default")
+		simpleRetryResponsesInts = []int{}
+	}
 
 	// TODO make consts
 	switch strings.ToLower(strings.TrimSpace(parentRetry)) {
