@@ -597,6 +597,13 @@ func makeParentDotConfigData(
 				text.GoDirect = goDirect
 				text.IgnoreQueryStringInParentSelection = !*parentQStr
 				// text += `dest_domain=` + orgURI.Hostname() + ` port=` + orgURI.Port() + ` ` + parents + ` ` + secondaryParents + ` ` + roundRobin + ` ` + goDirect + ` qstring=` + parentQStr + "\n"
+
+				prWarns := []string{}
+				text.MaxSimpleRetries, text.MaxMarkdownRetries, text.MarkdownResponseCodes, text.ErrorResponseCodes, prWarns = getParentRetryStr(true, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleRetryResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+				warnings = append(warnings, prWarns...)
+
+				// txt += getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+
 			}
 			parentAbstraction.Services = append(parentAbstraction.Services, text)
 		}
@@ -1040,7 +1047,7 @@ func getTopologyParentConfigLine(
 
 	// TODO convert
 	prWarns := []string{}
-	txt.MaxSimpleRetries, txt.MaxMarkdownRetries, txt.MarkdownResponseCodes, txt.ErrorResponseCodes, prWarns = getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleRetryResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
+	txt.MaxSimpleRetries, txt.MaxMarkdownRetries, txt.MarkdownResponseCodes, txt.ErrorResponseCodes, prWarns = getParentRetryStr(true, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleRetryResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
 	warnings = append(warnings, prWarns...)
 
 	// txt += getParentRetryStr(serverPlacement.IsLastCacheTier, atsMajorVer, dsParams.ParentRetry, dsParams.SimpleResponses, dsParams.UnavailableServerRetryResponses, dsParams.MaxSimpleRetries, dsParams.MaxUnavailableServerRetries)
