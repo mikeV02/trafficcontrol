@@ -41,4 +41,4 @@ RUN	chmod +x /usr/bin/docker-compose
 COPY	--from=tsb-build /usr/bin/tsb /usr/bin/tsb
 RUN	git config --global user.email "dev@trafficcontrol.apache.org"
 RUN	git config --global user.name "Apache Traffic Control"
-CMD	["/usr/bin/tsb", "cd", "/opt/tsb-ats", "fetch", "prebuild"]
+CMD	/usr/bin/tsb -v cd /opt/tsb-ats fetch prebuild;
