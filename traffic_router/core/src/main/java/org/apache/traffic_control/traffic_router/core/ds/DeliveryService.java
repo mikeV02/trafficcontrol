@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.traffic_control.traffic_router.core.edge.Cache;
 import org.apache.traffic_control.traffic_router.core.edge.InetRecord;
 import org.apache.traffic_control.traffic_router.core.edge.Location;
+import org.apache.traffic_control.traffic_router.core.edge.Node.IPVersions;
 import org.apache.traffic_control.traffic_router.core.edge.Cache.DeliveryServiceReference;
 import org.apache.traffic_control.traffic_router.core.edge.CacheLocation;
 import org.apache.traffic_control.traffic_router.geolocation.Geolocation;
@@ -429,6 +430,25 @@ public class DeliveryService {
 			track.setResultDetails(ResultDetails.DS_NO_BYPASS);
 			return null;
 		}
+		track.setResult(ResultType.DS_REDIRECT);
+		track.setResultDetails(ResultDetails.DS_BYPASS);
+		return getRedirectInetRecords(bypassDestination.get("DNS"));
+	}
+
+	// Check for IPv6
+	public List<InetRecord> getFailureDnsResponse(final DNSRequest request, final Track track, final IPVersions requestVersion) {
+		if(bypassDestination == null) {
+			track.setResult(ResultType.MISS);
+			track.setResultDetails(ResultDetails.DS_NO_BYPASS);
+			return null;
+		}
+
+		if (requestVersion == IPVersions.IPV6ONLY && !this.ip6RoutingEnabled) {
+			track.setResult(ResultType.MISS);
+			track.setResultDetails(ResultDetails.DS_NO_BYPASS);
+			return null;
+		}
+
 		track.setResult(ResultType.DS_REDIRECT);
 		track.setResultDetails(ResultDetails.DS_BYPASS);
 		return getRedirectInetRecords(bypassDestination.get("DNS"));

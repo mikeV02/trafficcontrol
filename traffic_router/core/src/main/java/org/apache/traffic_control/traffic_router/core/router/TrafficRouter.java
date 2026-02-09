@@ -784,7 +784,7 @@ public class TrafficRouter {
 			result.setAddresses(inetRecordsFromCaches(ds, caches, request));
 		} else {
 			track.setResult(ResultType.MISS);
-			result.setAddresses(ds.getFailureDnsResponse(request, track));
+			result.setAddresses(ds.getFailureDnsResponse(request, track, requestVersion));
 		}
 
 		result.addAddresses(selectTrafficRouters(request, ds));
