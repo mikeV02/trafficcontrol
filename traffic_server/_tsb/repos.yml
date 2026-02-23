@@ -1,5 +1,5 @@
 ats:
     src: https://github.com/apache/trafficserver
     branch: 9.2.x
-    head: fdf5fb223c5eef92991ceb28a53cb8add956914b
+    head: 7b06037ac1ecb25bc629e40d1a0ccaee0605babd
     extra: []
