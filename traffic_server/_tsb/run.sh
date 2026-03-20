@@ -46,6 +46,8 @@ w
 ED
 ) || die "Failed to patch plugins makefile to include astats."
 
+cp -far /opt/src/maxmind_acl /rpmbuilddir/SOURCES/src/plugins/experimental/
+
 # Patch trafficserver systemd service
 # This includes changing output redirection to traffic.out and adding udev-settle to wait for disks
 (sed -i 's/ExecStart=@exp_bindir@\/traffic_manager \$TM_DAEMON_ARGS/ExecStart=@exp_bindir@\/traffic_manager --bind_stdout @exp_logdir@\/traffic.out --bind_stderr @exp_logdir@\/traffic.out \$TM_DAEMON_ARGS/g' /rpmbuilddir/SOURCES/src/rc/trafficserver.service.in)
