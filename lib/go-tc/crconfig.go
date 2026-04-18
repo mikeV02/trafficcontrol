@@ -148,6 +148,7 @@ type CRConfigDeliveryService struct {
 	IP6RoutingEnabled         *bool                                 `json:"ip6RoutingEnabled,string,omitempty"`
 	MatchSets                 []*MatchSet                           `json:"matchsets,omitempty"`
 	MaxDNSIPsForLocation      *int                                  `json:"maxDnsIpsForLocation,omitempty"`
+	DnsServerOrder            []string                              `json:"dnsServerOrder,omitempty"`
 	MissLocation              *CRConfigLatitudeLongitudeShort       `json:"missLocation,omitempty"`
 	Protocol                  *CRConfigDeliveryServiceProtocol      `json:"protocol,omitempty"`
 	RegionalGeoBlocking       *string                               `json:"regionalGeoBlocking,omitempty"`

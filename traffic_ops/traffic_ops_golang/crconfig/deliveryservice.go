@@ -21,6 +21,7 @@ package crconfig
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -126,7 +127,8 @@ SELECT d.anonymous_blocking_enabled,
        d.tr_response_headers,
        d.tr_response_headers,
        t.name AS type,
-       d.xml_id
+       d.xml_id,
+       d.long_desc
 FROM deliveryservice AS d
 INNER JOIN type AS t ON t.id = d.type
 LEFT OUTER JOIN profile AS p ON p.id = d.profile
@@ -162,6 +164,7 @@ AND d.active = true
 		geoBlocking := false
 		trRespHdrsStr := sql.NullString{}
 		xmlID := ""
+		longDesc := sql.NullString{}
 		maxDNSAnswers := sql.NullInt64{}
 		profile := sql.NullString{}
 		dnsBypassIP := sql.NullString{}
@@ -208,6 +211,7 @@ AND d.active = true
 			&trResponseHeaders,
 			&ttype,
 			&xmlID,
+			&longDesc,
 		)
 		if err != nil {
 			return nil, errors.New("scanning deliveryservice: " + err.Error())
@@ -412,6 +416,12 @@ AND d.active = true
 
 		ds.StaticDNSEntries = staticDNSEntries[tc.DeliveryServiceName(xmlID)]
 
+		if longDesc.Valid && longDesc.String != "" {
+            if order := parseDnsServerOrder(longDesc.String); len(order) > 0 {
+                ds.DnsServerOrder = order
+            }
+        }
+
 		dses[xmlID] = ds
 	}
 
@@ -598,4 +608,28 @@ where profile.id in (select profile from server where server.cdn_id = (select id
 		return nil, errors.New("iterating deliveryservice parameter rows: " + err.Error())
 	}
 	return params, nil
+}
+
+// parseDnsServerOrder extracts an ordered list of server names from a DS
+// long_desc field. The expected format anywhere in the text is:
+//
+//   "dnsOrder": ["server1", "server2", "server3"]
+func parseDnsServerOrder(longDesc string) []string {
+    const marker = `"dnsOrder":`
+    idx := strings.Index(longDesc, marker)
+    if idx == -1 {
+        return nil
+    }
+    rest := strings.TrimSpace(longDesc[idx+len(marker):])
+    end := strings.Index(rest, "]")
+    if end == -1 {
+        log.Warnln("dnsOrder found in long_desc but no closing ']'")
+        return nil
+    }
+    var order []string
+    if err := json.Unmarshal([]byte(rest[:end+1]), &order); err != nil {
+        log.Warnln("failed to parse dnsOrder array from long_desc: " + err.Error())
+        return nil
+    }
+    return order
 }
