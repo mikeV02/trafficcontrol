@@ -852,25 +852,59 @@ public class TrafficRouter {
 		final int maxDnsIps = ds.getMaxDnsIps();
 		List<Cache> selectedCaches;
 
-		if (maxDnsIps > 0 && isConsistentDNSRouting()) { // only consistent hash if we must
-			selectedCaches = (List<Cache>) consistentHasher.selectHashables(caches, ds.getDispersion(), request.getHostname());
+		if (maxDnsIps > 0 && isConsistentDNSRouting()) {
+			final Map<String, Integer> dnsServerOrder = ds.getDnsServerOrder();
+			if (!dnsServerOrder.isEmpty()) {
+				final List<Cache> ordered = new ArrayList<>(caches);
+				ordered.sort((a, b) -> {
+					final int posA = dnsServerOrder.getOrDefault(a.getId(), Integer.MAX_VALUE);
+					final int posB = dnsServerOrder.getOrDefault(b.getId(), Integer.MAX_VALUE);
+					return Integer.compare(posA, posB);
+				});
+				selectedCaches = new ArrayList<>();
+				for (final Cache cache : ordered) {
+					selectedCaches.add(cache);
+					if (selectedCaches.size() >= maxDnsIps) {
+						break;
+					}
+				}
+			} else {
+				selectedCaches = (List<Cache>) consistentHasher.selectHashables(caches, ds.getDispersion(), request.getHostname());
+			}
 		} else if (maxDnsIps > 0) {
-			/*
-			 * We also shuffle in NameServer when adding Records to the Message prior
-			 * to sending it out, as the Records are sorted later when we fill the
-			 * dynamic zone if DNSSEC is enabled. We shuffle here prior to pruning
-			 * for maxDnsIps so that we ensure we are spreading load across all caches
-			 * assigned to this delivery service.
-			*/
-			Collections.shuffle(caches, random);
+			final Map<String, Integer> dnsServerOrder = ds.getDnsServerOrder();
+			if (!dnsServerOrder.isEmpty()) {
+				final List<Cache> ordered = new ArrayList<>(caches);
+				ordered.sort((a, b) -> {
+					final int posA = dnsServerOrder.getOrDefault(a.getId(), Integer.MAX_VALUE);
+					final int posB = dnsServerOrder.getOrDefault(b.getId(), Integer.MAX_VALUE);
+					return Integer.compare(posA, posB);
+				});
+				selectedCaches = new ArrayList<>();
+				for (final Cache cache : ordered) {
+					selectedCaches.add(cache);
+					if (selectedCaches.size() >= maxDnsIps) {
+						break;
+					}
+				}
+			} else {
+				/*
+				* We also shuffle in NameServer when adding Records to the Message prior
+				* to sending it out, as the Records are sorted later when we fill the
+				* dynamic zone if DNSSEC is enabled. We shuffle here prior to pruning
+				* for maxDnsIps so that we ensure we are spreading load across all caches
+				* assigned to this delivery service.
+				*/
+				Collections.shuffle(caches, random);
 
-			selectedCaches = new ArrayList<Cache>();
+				selectedCaches = new ArrayList<Cache>();
 
-			for (final Cache cache : caches) {
-				selectedCaches.add(cache);
+				for (final Cache cache : caches) {
+					selectedCaches.add(cache);
 
-				if (selectedCaches.size() >= maxDnsIps) {
-					break;
+					if (selectedCaches.size() >= maxDnsIps) {
+						break;
+					}
 				}
 			}
 		} else {

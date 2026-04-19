@@ -94,6 +94,7 @@ public class DeliveryService {
 	private final String routingName;
 	private String topology;
 	private final Set<String> requiredCapabilities;
+	private final Map<String, Integer> dnsServerOrder;
 	private final boolean shouldAppendQueryString;
 	private final Geolocation missLocation;
 	private final Dispersion dispersion;
@@ -150,6 +151,8 @@ public class DeliveryService {
 		initTopology(dsJo);
 		this.requiredCapabilities = new HashSet<>();
 		initRequiredCapabilities(dsJo);
+		this.dnsServerOrder = new HashMap<>();
+        initDnsServerOrder(dsJo);
 
 		this.consistentHashQueryParams = new HashSet<>();
 		initConsistentHashQueryParams(dsJo);
@@ -200,6 +203,23 @@ public class DeliveryService {
 						this.requiredCapabilities.add(requiredCapability);
 					}
 				});
+			}
+		}
+	}
+
+	private void initDnsServerOrder(final JsonNode dsJo) {
+		if (dsJo.has("dnsServerOrder")) {
+			final JsonNode orderNode = dsJo.get("dnsServerOrder");
+			if (!orderNode.isArray()) {
+				LOGGER.error("Delivery Service '" + id + "' has malformed dnsServerOrder. Disregarding.");
+			} else {
+				int i = 0;
+				for (final JsonNode n : orderNode) {
+					final String name = n.asText();
+					if (!name.isEmpty()) {
+						this.dnsServerOrder.put(name, i++);
+					}
+				}
 			}
 		}
 	}
@@ -653,6 +673,10 @@ public class DeliveryService {
 
 	public int getMaxDnsIps() {
 		return getProp("maxDnsIpsForLocation",0);
+	}
+
+	public Map<String, Integer> getDnsServerOrder() {
+		return dnsServerOrder;
 	}
 
 	@JsonIgnore
