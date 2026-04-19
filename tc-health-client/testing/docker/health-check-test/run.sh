@@ -28,7 +28,8 @@ TERM=xterm; export TERM
 # install go
 if [[ -f /trafficcontrol/GO_VERSION ]]; then
   go_version=$(cat /trafficcontrol/GO_VERSION) && \
-  curl -Lo go.tar.gz https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz && \
+  cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)) && \
+  curl -Lo go.tar.gz https://dl.google.com/go/go${go_version}.linux-${cpu_arch}.tar.gz && \
   tar -C /usr/local -xvzf go.tar.gz && \
   ln -s /usr/local/go/bin/go /usr/bin/go && \
   rm go.tar.gz

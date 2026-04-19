@@ -26,7 +26,8 @@ RUN apt-get update && \
 
 COPY GO_VERSION /
 RUN go_version=$(cat /GO_VERSION) && \
-    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz && \
+    cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)) && \
+    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-${cpu_arch}.tar.gz && \
     tar -C /usr/local -xvzf go.tar.gz && \
     ln -s /usr/local/go/bin/go /usr/bin/go && \
     rm go.tar.gz
@@ -59,7 +60,7 @@ RUN set -o errexit -o nounset; \
     fi; \
     go build -ldflags "$ldflags" -gcflags "$gcflags"
 
-FROM enroller-dependencies as get-delve
+FROM enroller-dependencies AS get-delve
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 FROM debian:bullseye AS enroller

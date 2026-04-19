@@ -22,7 +22,7 @@
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
-FROM ${BASE_IMAGE}:${RHEL_VERSION} as trafficmonitor-dependencies
+FROM ${BASE_IMAGE}:${RHEL_VERSION} AS trafficmonitor-dependencies
 ARG RHEL_VERSION=9
 
 RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
@@ -68,12 +68,12 @@ CMD /run.sh
 HEALTHCHECK --interval=10s --timeout=1s \
     CMD bash -c 'source /to-access.sh && [[ "$(curl -s http://trafficmonitor.infra.ciab.test/api/traffic-ops-uri)" == "$TO_URL" ]]'
 
-FROM trafficmonitor-dependencies as get-delve
+FROM trafficmonitor-dependencies AS get-delve
 
 RUN dnf -y install golang && \
     go install github.com/go-delve/delve/cmd/dlv@latest
 
-FROM trafficmonitor as trafficmonitor-debug
+FROM trafficmonitor AS trafficmonitor-debug
 COPY --from=get-delve /root/go/bin /usr/bin
 
 # Makes the default target skip the trafficmonitor-debug stage

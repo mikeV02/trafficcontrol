@@ -19,7 +19,7 @@
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
-FROM ${BASE_IMAGE}:${RHEL_VERSION} as ats-common-dependencies
+FROM ${BASE_IMAGE}:${RHEL_VERSION} AS ats-common-dependencies
 ARG RHEL_VERSION=9
 
 MAINTAINER dev@trafficcontrol.apache.org

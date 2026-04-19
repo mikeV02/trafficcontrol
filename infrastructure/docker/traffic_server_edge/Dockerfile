@@ -70,8 +70,10 @@ RUN setcap 'cap_net_bind_service=+ep' /opt/trafficserver/bin/tspush
 RUN setcap 'cap_net_bind_service=+ep' /opt/trafficserver/bin/tsxs
 
 # \todo move Heka to its own container, sharing the ATS log file via --volume
-RUN curl -LO https://github.com/mozilla-services/heka/releases/download/v0.10.0/heka-0_10_0-linux-amd64.rpm
-RUN yum install -y heka-0_10_0-linux-amd64.rpm
+RUN cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)); \
+    curl -LO https://github.com/mozilla-services/heka/releases/download/v0.10.0/heka-0_10_0-linux-${cpu_arch}.rpm
+RUN cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)); \
+    yum install -y heka-0_10_0-linux-${cpu_arch}.rpm
 RUN mkdir etc/hekad
 RUN printf '[ats_traffic_logs] \n\
 type = "LogstreamerInput" \n\

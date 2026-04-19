@@ -20,7 +20,8 @@ set -e
 
 download_go() {
 	go_version="$(cat "${GITHUB_WORKSPACE}/GO_VERSION")"
-	wget -O go.tar.gz "https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
+	cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64))
+	wget -O go.tar.gz "https://dl.google.com/go/go${go_version}.linux-${cpu_arch}.tar.gz"
 	tar -C /usr/local -xzf go.tar.gz
 	rm go.tar.gz
 	export PATH="${PATH}:${GOROOT}/bin"

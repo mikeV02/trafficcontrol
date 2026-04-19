@@ -23,7 +23,7 @@
     # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
-FROM ${BASE_IMAGE}:${RHEL_VERSION} as trafficops-dependencies
+FROM ${BASE_IMAGE}:${RHEL_VERSION} AS trafficops-dependencies
 ARG RHEL_VERSION=9
 # Makes RHEL_VERSION available in later layers without needing to specify it again
 ENV RHEL_VERSION="$RHEL_VERSION"
@@ -116,7 +116,7 @@ CMD /run-go.sh
 HEALTHCHECK --interval=10s --timeout=1s \
 	CMD bash -c 'source /to-access.sh && [[ "$(curl -sk "https://${TO_FQDN}/api/${TO_API_VERSION}/ping" | jq .ping)" == \"pong\" ]]'
 
-FROM trafficops-dependencies as get-delve
+FROM trafficops-dependencies AS get-delve
 
 RUN dnf -y install golang && \
     go install github.com/go-delve/delve/cmd/dlv@latest

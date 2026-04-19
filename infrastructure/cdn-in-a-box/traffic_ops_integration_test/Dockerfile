@@ -20,7 +20,8 @@ FROM alpine:3.13 AS integration-builder
 COPY GO_VERSION /
 RUN set -o errexit; \
     go_version=$(cat /GO_VERSION); \
-    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz; \
+    cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)); \
+    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-${cpu_arch}.tar.gz; \
     tar -C /usr/local -xvzf go.tar.gz; \
     ln -s /usr/local/go/bin/go /usr/bin/go; \
     rm go.tar.gz; \

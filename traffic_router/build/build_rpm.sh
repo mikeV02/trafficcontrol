@@ -78,7 +78,7 @@ adaptEnvironment() {
 	WORKSPACE=${WORKSPACE:-$TC_DIR}
 	RPMBUILD="$WORKSPACE/rpmbuild"
 	DIST="$WORKSPACE/dist"
-	RPM="${PACKAGE}-${TC_VERSION}-${BUILD_NUMBER}.x86_64.rpm"
+	RPM="${PACKAGE}-${TC_VERSION}-${BUILD_NUMBER}.$(uname -p).rpm"
 	RPM_TARGET_OS="${RPM_TARGET_OS:-linux}"
 	TOMCAT_VERSION=9.0
 	TOMCAT_RELEASE=102
@@ -105,6 +105,7 @@ initBuildArea() {
 
 	export MVN_CMD="mvn versions:set -DnewVersion=$TC_VERSION"
 	echo "$MVN_CMD"
+	cp  "$TR_DIR"/build/pom.xml.$(uname -p) "$TR_DIR/build/pom.xml" || { echo "Could not copy to $TR_DIR: $?"; return 1; }
 	(cd "$TR_DIR"; $MVN_CMD)
 	cp -r "$TR_DIR"/build "$TR_DIR"/connector "$TR_DIR"/core "$tr_dest"/. || { echo "Could not copy to $tr_dest: $?"; return 1; }
 	cp  "$TR_DIR"/pom.xml "$tr_dest" || { echo "Could not copy to $tr_dest: $?"; return 1; }

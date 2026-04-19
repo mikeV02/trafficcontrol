@@ -20,7 +20,8 @@ FROM alpine:3.13 AS base
 COPY GO_VERSION /
 RUN set -o errexit; \
     go_version=$(cat /GO_VERSION); \
-    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz; \
+    cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)); \
+    wget -O go.tar.gz https://dl.google.com/go/go${go_version}.linux-${cpu_arch}.tar.gz; \
     tar -C /usr/local -xvzf go.tar.gz; \
     ln -s /usr/local/go/bin/go /usr/bin/go; \
     rm go.tar.gz; \
@@ -45,10 +46,11 @@ FROM base AS lint
 RUN apk --no-cache add curl
 
 RUN version=1.32.0 && \
-    curl -L https://github.com/golangci/golangci-lint/releases/download/v${version}/golangci-lint-${version}-linux-amd64.tar.gz \
+    cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)) && \
+    curl -L https://github.com/golangci/golangci-lint/releases/download/v${version}/golangci-lint-${version}-linux-${cpu_arch}.tar.gz \
 	| tar -zxC /tmp \
-	&& mv /tmp/golangci-lint-${version}-linux-amd64/golangci-lint /usr/local/bin/golangci-lint \
-	&& rm -rf /tmp/golangci-lint-${version}-linux-amd64
+	&& mv /tmp/golangci-lint-${version}-linux-${cpu_arch}/golangci-lint /usr/local/bin/golangci-lint \
+	&& rm -rf /tmp/golangci-lint-${version}-linux-${cpu_arch}
 
 CMD go mod vendor -v && \
     golangci-lint run ./...
