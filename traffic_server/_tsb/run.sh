@@ -47,6 +47,7 @@ ED
 ) || die "Failed to patch plugins makefile to include astats."
 
 cp -far /opt/src/maxmind_acl /rpmbuilddir/SOURCES/src/plugins/experimental/
+cp -far /opt/src/authproxy /rpmbuilddir/SOURCES/src/plugins/
 
 # Patch trafficserver systemd service
 # This includes changing output redirection to traffic.out and adding udev-settle to wait for disks

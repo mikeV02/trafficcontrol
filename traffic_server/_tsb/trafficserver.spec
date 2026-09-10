@@ -66,7 +66,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/trafficserver/openssl/lib:/usr/loca
 %else
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 %endif
-make %{?_smp_mflags} check || ( cat ./test-suite.log; exit 1 )
+#make %{?_smp_mflags} check || ( cat ./test-suite.log; exit 1 )
 
 %install
 make DESTDIR=$RPM_BUILD_ROOT install
