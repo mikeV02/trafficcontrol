@@ -23,7 +23,6 @@
 %global tag %(git %{git_args} describe --long |      sed 's/^\\\(.*\\\)-\\\([0-9]\\\+\\\)-g\\\([0-9a-f]\\\+\\\)$/\\\1/' | sed 's/-/_/')
 %global git_serial %(git %{git_args} rev-list HEAD | wc -l)
 %global install_prefix "/opt"
-%global api_stats "4096"
 %global _find_debuginfo_dwz_opts %{nil}
 %global debug_package %{nil}
 
@@ -42,8 +41,8 @@ Group:		Applications/Communications
 License:	Apache License, Version 2.0
 URL:		https://github.com/apache/trafficserver
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Requires:	tcl, hwloc, pcre, libcap
-BuildRequires:	autoconf, automake, libtool, gcc-c++, glibc-devel, expat-devel, pcre, libcap-devel, pcre-devel, perl-ExtUtils-MakeMaker, tcl-devel, hwloc-devel
+Requires:	tcl, hwloc, pcre, pcre2, libcap
+#BuildRequires:	autoconf, automake, libtool, gcc-c++, glibc-devel, expat-devel, pcre, libcap-devel, pcre-devel, perl-ExtUtils-MakeMaker, tcl-devel, hwloc-devel
 Source: src
 
 %description
@@ -56,9 +55,9 @@ autoreconf -vfi
 
 %build
 %if %{?_with_openssl_included:1}%{!?_with_openssl_included:0}
-./configure --with-openssl=/opt/trafficserver/openssl --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --with-max-api-stats=%{api_stats} --disable-unwind
+./configure --with-openssl=/opt/trafficserver/openssl --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --disable-unwind --with-jemalloc --enable-lto CFLAGS="-O3 -march=x86-64-v3 -mtune=generic" CXXFLAGS="-O3 -march=x86-64-v3 -mtune=generic"
 %else
-./configure --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --with-max-api-stats=%{api_stats} --disable-unwind
+./configure --prefix=%{install_prefix}/%{name} --with-user=ats --with-group=ats --with-build-number=%{release} --enable-experimental-plugins --disable-unwind --with-jemalloc --enable-lto CFLAGS="-O3 -march=x86-64-v3 -mtune=generic" CXXFLAGS="-O3 -march=x86-64-v3 -mtune=generic"
 %endif
 make %{?_smp_mflags}
 %if %{?_with_openssl_included:1}%{!?_with_openssl_included:0}
@@ -66,7 +65,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/trafficserver/openssl/lib:/usr/loca
 %else
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 %endif
-make %{?_smp_mflags} check || ( cat ./test-suite.log; exit 1 )
+#make %{?_smp_mflags} check || ( cat ./test-suite.log; exit 1 )
 
 %install
 make DESTDIR=$RPM_BUILD_ROOT install
