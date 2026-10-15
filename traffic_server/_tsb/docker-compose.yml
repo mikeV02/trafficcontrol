@@ -22,7 +22,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
     image: ats_build

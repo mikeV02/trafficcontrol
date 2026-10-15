@@ -31,9 +31,6 @@ RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
     elif [[ ${RHEL_VERSION%%.*} -eq 9 ]]; then \
         yum install -y 'dnf-command(config-manager)'; \
         yum config-manager --set-enabled crb; \
-    else \
-        yum install -y deltarpm centos-release-scl-rh; \
-        yum-config-manager --enable rhel-server-rhscl-7-rpms; \
     fi && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
     rpm --import "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-${RHEL_VERSION%%.*}" && \
@@ -48,34 +45,19 @@ RUN if [[ ${RHEL_VERSION%%.*} -eq 8 ]]; then \
 
 ### ats specific requirements
 FROM ats-common-dependencies AS build-ats-specific
-ARG RHEL_VERSION=9
-ENV RHEL_VERSION="$RHEL_VERSION"
 
-RUN if [[ ${RHEL_VERSION%%.*} -ge 8 ]] && \
-       [[ ${RHEL_VERSION%%.*} -le 9 ]]; then \
-        os_pkgs=( \
-            brotli \
-            brotli-devel \
-            curl \
-            gcc-toolset-13 \
-            gcc-toolset-13-gcc \
-            gcc-toolset-13-gcc-c++ \
-            gcc-toolset-13-runtime \
-            jansson \
-            jansson-devel \
-            jemalloc \
-            jemalloc-devel); \
-    else \
-        os_pkgs=( \
-            devtoolset-11 \
-            curl \
-            jansson \
-            jansson-devel \
-            jemalloc \
-            jemalloc-devel); \
-    fi \
-    && yum --allowerasing install -y \
-        ${os_pkgs[*]} \
+RUN yum --allowerasing install -y \
+        brotli \
+        brotli-devel \
+        curl \
+        gcc-toolset-13 \
+        gcc-toolset-13-gcc \
+        gcc-toolset-13-gcc-c++ \
+        gcc-toolset-13-runtime \
+        jansson \
+        jansson-devel \
+        jemalloc \
+        jemalloc-devel \
         libmaxminddb \
         libmaxminddb-devel \
         autoconf \
@@ -119,18 +101,8 @@ COPY run.sh /run.sh
 COPY trafficserver.spec /rpmbuilddir/SPECS/trafficserver.spec
 RUN /usr/sbin/useradd -u 176 -r ats -s /sbin/nologin -d /
 
-CMD if [[ ${RHEL_VERSION%%.*} -ge 8 ]] && \
-       [[ ${RHEL_VERSION%%.*} -le 9 ]]; then \
-        openssl_included='--without_openssl'; \
-        set -o pipefail; \
-        scl enable gcc-toolset-13 -- \
-            bash -c "./run.sh ${openssl_included} 2>&1 | \
-            tee /rpmbuilddir/RPMS/build-trafficserver.log"; \
-    else \
-        echo "I AM HERE"; \
-        openssl_included='--with_openssl'; \
-        set -o pipefail; \
-        scl enable devtoolset-11 -- \
-            bash -c "./run.sh ${openssl_included} 2>&1 | \
-            tee /rpmbuilddir/RPMS/build-trafficserver.log"; \
-    fi
+CMD openssl_included='--without_openssl'; \
+    set -o pipefail; \
+    scl enable gcc-toolset-13 -- \
+        bash -c "./run.sh ${openssl_included} 2>&1 | \
+        tee /rpmbuilddir/RPMS/build-trafficserver.log"

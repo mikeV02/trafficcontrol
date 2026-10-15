@@ -19,15 +19,9 @@
 # Based on Rocky Linux 8
 ############################################################
 
-    # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION}
-ARG RHEL_VERSION=9
-
-RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-        yum -y install dnf || exit 1; \
-    fi
 
 MAINTAINER dev@trafficcontrol.apache.org
 

@@ -15,22 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-    # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} AS os-dependencies
-ARG RHEL_VERSION=9
 
-RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-        yum -y install dnf || exit 1; \
-    fi
-
-RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-        utils_package=yum-utils; \
-    else \
-        utils_package=dnf-utils; \
-    fi && \
-    dnf install -y \
+RUN dnf install -y \
         bind-utils \
         # chromium and jq are in EPEL
         epel-release \
@@ -40,7 +29,7 @@ RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
         git \
         java-1.8.0-openjdk \
         net-tools \
-        $utils_package && \
+        dnf-utils && \
     set -o pipefail && \
     dnf -y install chromium jq && \
     dnf -y clean all

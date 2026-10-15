@@ -179,9 +179,6 @@ $(ORT_RPM_ABSOLUTE): $(ORT_DIST_RPM)
 	cp -f "$?" "$@"
 
 # Dist rpms
-$(ATS_DIST_RPM): $(ATS_SOURCE)
-	docker-compose -f $(TC_DIR)/cache-config/testing/docker/docker-compose-ats-build.yml build --parallel trafficserver_build && docker-compose -f $(TC_DIR)/cache-config/testing/docker/docker-compose-ats-build.yml run --rm trafficserver_build
-
 $(TM_DIST_RPM): $(TM_SOURCE)
 	"$(PKG_COMMAND)" $(PKG_FLAGS) traffic_monitor$(BUILD_SUFFIX)
 

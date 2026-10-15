@@ -21,7 +21,6 @@
 # Based on Rocky Linux 8
 ############################################################
 
-    # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} AS common-traffic-server-dependencies
@@ -32,20 +31,9 @@ ENV RHEL_VERSION="$RHEL_VERSION"
 # The /traffic_ops_data volume is included to set the ATS RPM version in the MID profile.
 VOLUME /traffic_ops_data
 
-RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-        yum -y install dnf || exit 1; \
-    fi
-
 EXPOSE 80
 
 RUN dnf -y install epel-release && \
-    if [[ "${RHEL_VERSION%%.*}" -lt 8 ]]; then \
-        additional_packages='perl(URI)' || \
-        exit 1; \
-    else \
-        additional_packages='' || \
-        exit 1; \
-    fi && \
     dnf -y install              \
         brotli                  \
         # find is required by to-access.sh
@@ -67,8 +55,7 @@ RUN dnf -y install epel-release && \
         numactl-libs            \
         openssl                 \
         perl                    \
-        tcl                     \
-        $additional_packages
+        tcl
 
 RUN dnf install -y bind-utils kyotocabinet-libs initscripts iproute net-tools nmap-ncat gettext autoconf automake libtool gcc-c++ cronie glibc-devel openssl-devel && \
     dnf install -y jq logrotate && \

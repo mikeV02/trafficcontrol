@@ -57,7 +57,6 @@ services:
       context: ../../
       dockerfile: infrastructure/cdn-in-a-box/traffic_ops/Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         TRAFFIC_OPS_RPM: infrastructure/cdn-in-a-box/traffic_ops/traffic_ops.rpm
@@ -85,7 +84,6 @@ services:
       context: .
       dockerfile: traffic_portal/Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         TRAFFIC_PORTAL_RPM: traffic_portal/traffic_portal.rpm
@@ -105,7 +103,6 @@ services:
       context: .
       dockerfile: traffic_monitor/Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         TRAFFIC_MONITOR_RPM: traffic_monitor/traffic_monitor.rpm
@@ -125,7 +122,6 @@ services:
       context: .
       dockerfile: traffic_router/Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         TRAFFIC_ROUTER_RPM: traffic_router/traffic_router.rpm
@@ -145,7 +141,6 @@ services:
       context: .
       dockerfile: traffic_stats/Dockerfile
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         TRAFFIC_TS_RPM: traffic_stats/traffic_stats.rpm
@@ -180,7 +175,6 @@ services:
       dockerfile: infrastructure/cdn-in-a-box/cache/Dockerfile
       target: edge
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         ORT_RPM: infrastructure/cdn-in-a-box/cache/trafficcontrol-cache-config.rpm
@@ -202,7 +196,6 @@ services:
       dockerfile: infrastructure/cdn-in-a-box/cache/Dockerfile
       target: mid
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         ORT_RPM: infrastructure/cdn-in-a-box/cache/trafficcontrol-cache-config.rpm
@@ -224,7 +217,6 @@ services:
       dockerfile: infrastructure/cdn-in-a-box/cache/Dockerfile
       target: mid
       args:
-        # Change BASE_IMAGE to centos when RHEL_VERSION=7
         BASE_IMAGE: ${BASE_IMAGE:-rockylinux}
         RHEL_VERSION: ${RHEL_VERSION:-9}
         ORT_RPM: infrastructure/cdn-in-a-box/cache/trafficcontrol-cache-config.rpm

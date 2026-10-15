@@ -20,7 +20,6 @@
 # Based on Rocky Linux 8
 ############################################################
 
-    # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
 FROM ${BASE_IMAGE}:${RHEL_VERSION} AS trafficops-dependencies
@@ -30,23 +29,12 @@ ENV RHEL_VERSION="$RHEL_VERSION"
 
 VOLUME /traffic_ops_data
 
-RUN if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-		yum -y install dnf || exit 1; \
-	fi
-
 RUN set -o nounset -o errexit && \
 	mkdir -p /etc/cron.d; \
-	if [[ "${RHEL_VERSION%%.*}" -eq 7 ]]; then \
-		use_repo=''; \
-		enable_repo=''; \
-	else \
-		use_repo='--repo=pgdg13'; \
-		enable_repo='--enablerepo=powertools'; \
-	fi; \
 	dnf -y install "https://download.postgresql.org/pub/repos/yum/reporpms/EL-${RHEL_VERSION%%.*}-x86_64/pgdg-redhat-repo-latest.noarch.rpm"; \
 	dnf -y install epel-release libicu; \
-	dnf -y $use_repo -- install postgresql13; \
-	dnf -y $enable_repo install \
+	dnf -y --repo=pgdg1 -- install postgresql13; \
+	dnf -y --enablerepo=powertools install \
 		bind-utils           \
 		# find is required by to-access.sh
 		findutils            \
