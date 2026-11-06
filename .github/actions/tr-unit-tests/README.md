@@ -31,7 +31,7 @@ This action runs the Traffic Router unit tests in an Alpine Docker container.
 ```yaml
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@master

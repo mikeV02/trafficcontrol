@@ -22,4 +22,5 @@ pkglib_LTLIBRARIES += inhomeproxy/inhomeproxy.la
 inhomeproxy_inhomeproxy_la_SOURCES = \
 	inhomeproxy/inhomeproxy.cc \
 	inhomeproxy/utils.cc \
-	inhomeproxy/utils.h
+	inhomeproxy/utils.h \
+	inhomeproxy/authcache.h

@@ -32,7 +32,7 @@ returns non-zero exit code on failure
 jobs:
   E2E_tests:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     services:
       hub:
         image: selenium/hub

@@ -35,7 +35,7 @@ This action runs the Traffic Ops ORT integration tests with the Traffic Ops API.
 ```yaml
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     services:
       postgres:

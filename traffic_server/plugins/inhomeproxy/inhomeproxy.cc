@@ -44,6 +44,7 @@
 // the TS_HTTP_SEND_RESPONSE_HDR_HOOK to send an error response if necessary.
 
 #include "utils.h"
+#include "authcache.h"
 #include <string>
 #include <memory> // placement new
 #include <limits>
@@ -72,6 +73,66 @@ static int AuthTaggedRequestArg = -1;
 
 static TSCont AuthOsDnsContinuation;
 
+// --- Process-wide allow-cache and metrics (local additions; see authcache.h) ---
+//
+// One cache for the whole traffic_server process, shared by every remap rule
+// that loads this plugin. Cache keys include the backend ("host:port"), so
+// rules that talk to different authorization hosts never share verdicts, while
+// rules that talk to the same one do: a viewer zapping across 100+ channel
+// rules costs one backend check per TTL instead of one per rule. It also
+// survives `traffic_ctl config reload`, so a reload does not trigger a wave of
+// re-authorizations.
+static inhome::AuthCache AuthAllowCache;
+
+enum AuthStatId {
+  AUTH_STAT_CACHE_HIT,      // request answered from the cache; backend not contacted
+  AUTH_STAT_CACHE_MISS,     // cacheable request that was not in the cache
+  AUTH_STAT_CACHE_SKIP,     // request that can never be cached (no/odd/ambiguous did); always asks the backend
+  AUTH_STAT_BACKEND_CALL,   // authorization requests actually sent to the backend  <-- the load you care about
+  AUTH_STAT_BACKEND_FAIL,   // backend timeout / connect error / 5xx
+  AUTH_STAT_BREAKER_BYPASS, // requests that skipped the backend because the circuit breaker was open
+  AUTH_STAT_BREAKER_TRIP,   // times the circuit breaker opened
+  AUTH_STAT_COUNT
+};
+
+static const char *const AuthStatNames[AUTH_STAT_COUNT] = {
+  "plugin.inhomeproxy.cache_hit",    "plugin.inhomeproxy.cache_miss",     "plugin.inhomeproxy.cache_skip",
+  "plugin.inhomeproxy.backend_call", "plugin.inhomeproxy.backend_fail",   "plugin.inhomeproxy.breaker_bypass",
+  "plugin.inhomeproxy.breaker_trip",
+};
+
+// -1 until registered; AuthStatInc() is a no-op for unregistered stats.
+static int AuthStatIds[AUTH_STAT_COUNT] = {-1, -1, -1, -1, -1, -1, -1};
+
+static void
+AuthStatsInit()
+{
+  static std::once_flag once;
+  std::call_once(once, [] {
+    for (int i = 0; i < AUTH_STAT_COUNT; ++i) {
+      int id = -1;
+      if (TSStatFindName(AuthStatNames[i], &id) == TS_ERROR) {
+        id = TSStatCreate(AuthStatNames[i], TS_RECORDDATATYPE_INT, TS_STAT_NON_PERSISTENT, TS_STAT_SYNC_SUM);
+        if (id == TS_ERROR) {
+          AuthLogError("[inhomeproxy] failed to register metric '%s'", AuthStatNames[i]);
+          id = -1;
+        } else {
+          TSStatIntSet(id, 0);
+        }
+      }
+      AuthStatIds[i] = id;
+    }
+  });
+}
+
+static inline void
+AuthStatInc(AuthStatId s)
+{
+  if (AuthStatIds[s] >= 0) {
+    TSStatIntIncrement(AuthStatIds[s], 1);
+  }
+}
+
 struct AuthOptions {
   std::string hostname;
   int hostport                   = -1;
@@ -99,6 +160,30 @@ struct AuthOptions {
   // the fail_open branch in StateUnauthorized().
   bool fail_open  = false;
   int timeout_ms  = 2000;
+
+  // cache_ttl_ms: remember a backend "authorized" verdict for this long,
+  // keyed on (backend, client IP, did) -- see authcache.h. 0 (default)
+  // disables caching, giving stock behavior: every matching request is
+  // checked. Only real 2xx verdicts are cached: never a deny, and never a
+  // fail-open outcome. cache_jitter_pct spreads each entry's lifetime by
+  // +/- that percentage so viewers authorized together do not all come due
+  // together. Remap mode only (like --uri-pattern).
+  int cache_ttl_ms         = 0;
+  unsigned cache_jitter_pct = 10;
+
+  // Circuit breaker (requires --fail-open): after breaker_failures
+  // consecutive backend failures, stop calling the backend for
+  // breaker_cooldown_ms and fail open immediately, then let a single probe
+  // request through to test recovery. Protects a struggling backend from
+  // the retry storm, and viewers from waiting out timeout_ms on every
+  // request. 0 (default) disables it.
+  int breaker_failures    = 0;
+  int breaker_cooldown_ms = 10000;
+  inhome::Breaker *breaker = nullptr; // owned by the process-wide registry, never freed
+
+  // "host:port" of the authorization backend: scope for cache keys and the
+  // breaker. Filled in at the end of AuthParseOptions().
+  std::string backend_id;
 
   AuthOptions()  = default;
   ~AuthOptions() = default;
@@ -199,6 +284,12 @@ struct AuthRequestContext {
   // action from within its own firing callback is not something we
   // should rely on being safe).
   TSAction timeout_action = nullptr;
+
+  // Cache key for this request, computed when the context is created (see
+  // AuthProxyGlobalHook) from the same client-request URL the backend will
+  // see. Empty when caching is off or the request is not cacheable. Used by
+  // StateAuthorized to record a genuine backend "allow".
+  std::string cache_key;
 
   const StateTransition *state = nullptr;
 
@@ -478,6 +569,8 @@ StateAuthProxyConnect(AuthRequestContext *auth, void * /* edata ATS_UNUSED */)
   auth->method = AuthRequestGetMethod(auth->txn);
   AuthLogDebug("client request %s a HEAD request", auth->method == TS_HTTP_METHOD_HEAD ? "is" : "is not");
 
+  AuthStatInc(AUTH_STAT_BACKEND_CALL);
+
   auth->vconn = TSHttpConnect(ip);
   if (auth->vconn == nullptr) {
     return TS_EVENT_ERROR;
@@ -510,8 +603,12 @@ StateAuthProxyCompleteHeaders(AuthRequestContext *auth, void * /* edata ATS_UNUS
   status = TSHttpHdrStatusGet(auth->rheader.buffer, auth->rheader.header);
   AuthLogDebug("authorization proxy returned status %d", (int)status);
 
-  // Authorize the original request on a 2xx response.
+  // Authorize the original request on a 2xx response. The backend answered,
+  // so it is healthy as far as the circuit breaker is concerned.
   if (status >= 200 && status < 300) {
+    if (auth->options()->breaker) {
+      auth->options()->breaker->OnSuccess();
+    }
     return TS_EVENT_IMMEDIATE;
   }
 
@@ -533,11 +630,20 @@ StateAuthProxyCompleteHeaders(AuthRequestContext *auth, void * /* edata ATS_UNUS
   // Route it through the exact same TS_EVENT_ERROR -> StateUnauthorized
   // path a raw connect failure takes, so the existing fail_open branch
   // there handles both uniformly.
-  if (auth->options()->fail_open &&
-      (status == TS_HTTP_STATUS_NONE || status == TS_HTTP_STATUS_BAD_GATEWAY ||
-       status == TS_HTTP_STATUS_SERVICE_UNAVAILABLE || status == TS_HTTP_STATUS_GATEWAY_TIMEOUT)) {
-    AuthLogDebug("authorization proxy unreachable (status %d) -- failing open", (int)status);
+  //
+  // Any 5xx counts, not only 502/503/504: a backend that is overloaded or
+  // crashing typically answers 500, and with --fail-open the intent is that
+  // an unhealthy backend must not block viewers. (A deliberate deny should
+  // be a 4xx, e.g. 403, which is relayed as before.)
+  if (auth->options()->fail_open && (status == TS_HTTP_STATUS_NONE || status >= 500)) {
+    AuthLogDebug("authorization proxy unreachable or unhealthy (status %d) -- failing open", (int)status);
     return TS_EVENT_ERROR;
+  }
+
+  // A real, non-5xx answer (e.g. a deliberate 403 deny): the backend is
+  // healthy, whatever its verdict. Denies are never cached.
+  if (auth->options()->breaker) {
+    auth->options()->breaker->OnSuccess();
   }
 
   if (auth->read_body) {
@@ -706,6 +812,26 @@ StateAuthProxyCompleteContent(AuthRequestContext *auth, void * /* edata ATS_UNUS
   return TS_EVENT_ERROR;
 }
 
+// Lets the original request proceed (applying --force-cacheability if
+// configured). Deliberately does NOT touch the allow-cache: callers decide.
+// A genuine backend 2xx (StateAuthorized) is recorded; a fail-open bypass
+// (StateUnauthorized) is an unverified guess and must not be, or a single
+// timeout would silently authorize that viewer for the whole cache TTL.
+static TSEvent
+AuthAuthorizeAndReenable(AuthRequestContext *auth)
+{
+  const AuthOptions *options = auth->options();
+
+  // Since the original request might have authentication headers, we may
+  // need to force ATS to ignore those in order to make it cacheable.
+  if (options->force) {
+    TSHttpTxnConfigIntSet(auth->txn, TS_CONFIG_HTTP_CACHE_IGNORE_AUTHENTICATION, 1);
+  }
+
+  TSHttpTxnReenable(auth->txn, TS_EVENT_HTTP_CONTINUE);
+  return TS_EVENT_CONTINUE;
+}
+
 // Terminal state. Force a 403 Forbidden response, unless --fail-open is
 // configured, in which case we treat "couldn't reach/parse the auth
 // proxy" as authorized instead. Note this path is only ever reached via
@@ -718,9 +844,17 @@ StateUnauthorized(AuthRequestContext *auth, void *)
 {
   const AuthOptions *options = auth->options();
 
+  // Every way into this state is a backend failure (timeout, connect error,
+  // EOS, 5xx): feed the circuit breaker and the metrics.
+  AuthStatInc(AUTH_STAT_BACKEND_FAIL);
+  if (options->breaker && options->breaker->OnFailure()) {
+    AuthStatInc(AUTH_STAT_BREAKER_TRIP);
+    AuthLogDebug("circuit breaker opened for %s", options->backend_id.c_str());
+  }
+
   if (options->fail_open) {
     AuthLogDebug("authorization proxy unreachable or failed -- failing open");
-    return StateAuthorized(auth, nullptr);
+    return AuthAuthorizeAndReenable(auth); // not StateAuthorized(): must not be cached
   }
 
   static const char msg[] = "authorization denied\n";
@@ -746,7 +880,9 @@ StateTimeout(AuthRequestContext *auth, void *edata)
   return StateUnauthorized(auth, edata);
 }
 
-// Terminal state. Allow the original request to proceed.
+// Terminal state. The authorization proxy answered 2xx: allow the original
+// request to proceed, and remember the verdict so the next requests from
+// this (client IP, did) skip the backend until the entry expires.
 static TSEvent
 StateAuthorized(AuthRequestContext *auth, void *)
 {
@@ -754,14 +890,12 @@ StateAuthorized(AuthRequestContext *auth, void *)
 
   AuthLogDebug("request authorized");
 
-  // Since the original request might have authentication headers, we may
-  // need to force ATS to ignore those in order to make it cacheable.
-  if (options->force) {
-    TSHttpTxnConfigIntSet(auth->txn, TS_CONFIG_HTTP_CACHE_IGNORE_AUTHENTICATION, 1);
+  if (options->cache_ttl_ms > 0 && !auth->cache_key.empty()) {
+    AuthAllowCache.Insert(auth->cache_key,
+                          inhome::AuthCache::ExpiryFor(std::chrono::milliseconds(options->cache_ttl_ms), options->cache_jitter_pct));
   }
 
-  TSHttpTxnReenable(auth->txn, TS_EVENT_HTTP_CONTINUE);
-  return TS_EVENT_CONTINUE;
+  return AuthAuthorizeAndReenable(auth);
 }
 
 // Return true if the given request was tagged by a remap rule as needing
@@ -778,6 +912,67 @@ CacheInternalRequests(TSHttpTxn txn)
 {
   AuthOptions *opt = static_cast<AuthOptions *>(TSUserArgGet(txn, AuthTaggedRequestArg));
   return opt ? opt->cache_internal_requests : false;
+}
+
+// Client address as text ("203.0.113.7", "2001:db8::1"); "" if unavailable.
+// This is the same address StateAuthProxyConnect hands to TSHttpConnect(), i.e.
+// the one the backend is being asked about.
+static std::string
+AuthClientIpString(TSHttpTxn txn)
+{
+  const sockaddr *addr       = TSHttpTxnClientAddrGet(txn);
+  char buf[INET6_ADDRSTRLEN] = {0};
+
+  if (addr == nullptr) {
+    return std::string();
+  }
+  if (addr->sa_family == AF_INET) {
+    const auto *sin = reinterpret_cast<const sockaddr_in *>(addr);
+    if (inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf)) == nullptr) {
+      return std::string();
+    }
+  } else if (addr->sa_family == AF_INET6) {
+    const auto *sin6 = reinterpret_cast<const sockaddr_in6 *>(addr);
+    if (inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf)) == nullptr) {
+      return std::string();
+    }
+  } else {
+    return std::string();
+  }
+  return std::string(buf);
+}
+
+// Cache key for the request whose URL is (bufp, url); "" if it must not be
+// cached (see inhome::MakeCacheKey for exactly when).
+static std::string
+AuthCacheKeyFor(const AuthOptions *options, TSHttpTxn txn, TSMBuffer bufp, TSMLoc url)
+{
+  int qlen          = 0;
+  const char *query = TSUrlHttpQueryGet(bufp, url, &qlen);
+
+  return inhome::MakeCacheKey(options->backend_id, AuthClientIpString(txn),
+                              (query != nullptr && qlen > 0) ? std::string(query, qlen) : std::string());
+}
+
+// Same key, taken from the transaction's client request. Used once the request
+// is past remap (no rri any more), at the moment the backend request is built
+// from that very same URL.
+static std::string
+AuthCacheKeyForTxn(const AuthOptions *options, TSHttpTxn txn)
+{
+  TSMBuffer bufp;
+  TSMLoc hdr, url;
+  std::string key;
+
+  if (TSHttpTxnClientReqGet(txn, &bufp, &hdr) != TS_SUCCESS) {
+    return key;
+  }
+  if (TSHttpHdrUrlGet(bufp, hdr, &url) == TS_SUCCESS) {
+    key = AuthCacheKeyFor(options, txn, bufp, url);
+    TSHandleMLocRelease(bufp, hdr, url);
+  }
+  TSHandleMLocRelease(bufp, TS_NULL_MLOC, hdr);
+  return key;
 }
 
 static int
@@ -810,6 +1005,11 @@ AuthProxyGlobalHook(TSCont /* cont ATS_UNUSED */, TSEvent event, void *edata)
       AuthRequestContext *auth = AuthRequestContext::allocate();
       auth->state              = StateTableInit;
       auth->txn                = txn;
+      // Remap mode only (tagged by TSRemapDoRemap): remember which cache
+      // entry a backend "allow" should be recorded under.
+      if (AuthRequestIsTagged(txn) && auth->options()->cache_ttl_ms > 0) {
+        auth->cache_key = AuthCacheKeyForTxn(auth->options(), txn);
+      }
       return AuthRequestContext::dispatch(auth->cont, event, edata);
     }
     // fallthrough
@@ -834,6 +1034,10 @@ AuthParseOptions(int argc, const char **argv)
     {const_cast<char *>("uri-pattern"), required_argument, nullptr, 'u'},
     {const_cast<char *>("fail-open"), no_argument, nullptr, 'f'},
     {const_cast<char *>("timeout-ms"), required_argument, nullptr, 'm'},
+    {const_cast<char *>("cache-ttl-ms"), required_argument, nullptr, 'T'},
+    {const_cast<char *>("cache-jitter-pct"), required_argument, nullptr, 'J'},
+    {const_cast<char *>("breaker-failures"), required_argument, nullptr, 'B'},
+    {const_cast<char *>("breaker-cooldown-ms"), required_argument, nullptr, 'K'},
     {nullptr, 0, nullptr, 0},
   };
 
@@ -882,6 +1086,36 @@ AuthParseOptions(int argc, const char **argv)
         options->timeout_ms = 2000;
       }
       break;
+    case 'T':
+      options->cache_ttl_ms = std::atoi(optarg);
+      if (options->cache_ttl_ms < 0) {
+        AuthLogError("[inhomeproxy] invalid --cache-ttl-ms '%s', caching disabled", optarg);
+        options->cache_ttl_ms = 0;
+      }
+      break;
+    case 'J': {
+      int pct = std::atoi(optarg);
+      if (pct < 0 || pct > 90) {
+        AuthLogError("[inhomeproxy] --cache-jitter-pct '%s' out of range 0-90, using %d", optarg, pct < 0 ? 0 : 90);
+        pct = pct < 0 ? 0 : 90;
+      }
+      options->cache_jitter_pct = static_cast<unsigned>(pct);
+      break;
+    }
+    case 'B':
+      options->breaker_failures = std::atoi(optarg);
+      if (options->breaker_failures < 0) {
+        AuthLogError("[inhomeproxy] invalid --breaker-failures '%s', breaker disabled", optarg);
+        options->breaker_failures = 0;
+      }
+      break;
+    case 'K':
+      options->breaker_cooldown_ms = std::atoi(optarg);
+      if (options->breaker_cooldown_ms <= 0) {
+        AuthLogError("[inhomeproxy] invalid --breaker-cooldown-ms '%s', using default of 10000ms", optarg);
+        options->breaker_cooldown_ms = 10000;
+      }
+      break;
     case 't':
       if (strcasecmp(optarg, "redirect") == 0) {
         options->transform = AuthWriteRedirectedRequest;
@@ -903,6 +1137,26 @@ AuthParseOptions(int argc, const char **argv)
 
   if (options->hostname.empty()) {
     options->hostname = "127.0.0.1";
+  }
+
+  // Scope for cache keys and the breaker: rules that talk to the same backend
+  // share verdicts and breaker state; rules that talk to different ones never do.
+  options->backend_id = options->hostname;
+  if (options->hostport != -1) {
+    options->backend_id += ":" + std::to_string(options->hostport);
+  }
+
+  if (options->breaker_failures > 0) {
+    if (!options->fail_open) {
+      AuthLogError("[inhomeproxy] --breaker-failures requires --fail-open (an open breaker bypasses the backend and allows the "
+                   "request); circuit breaker disabled");
+    } else {
+      // probe window a little above the request timeout, so a probe that never
+      // reports back cannot keep the breaker open forever.
+      options->breaker = inhome::GetBreaker(options->backend_id, options->breaker_failures,
+                                            std::chrono::milliseconds(options->breaker_cooldown_ms),
+                                            std::chrono::milliseconds(options->timeout_ms + 1000));
+    }
   }
 
   return options;
@@ -927,6 +1181,8 @@ TSPluginInit(int argc, const char *argv[])
     AuthLogError("plugin registration failed");
   }
 
+  AuthStatsInit();
+
   TSReleaseAssert(TSUserArgIndexReserve(TS_USER_ARGS_TXN, "InHomeProxy", "InHomeProxy authorization tag", &AuthTaggedRequestArg) ==
                   TS_SUCCESS);
 
@@ -941,6 +1197,8 @@ TSPluginInit(int argc, const char *argv[])
 TSReturnCode
 TSRemapInit(TSRemapInterface * /* api ATS_UNUSED */, char * /* err ATS_UNUSED */, int /* errsz ATS_UNUSED */)
 {
+  AuthStatsInit();
+
   TSReleaseAssert(TSUserArgIndexReserve(TS_USER_ARGS_TXN, "InHomeProxy", "InHomeProxy authorization tag", &AuthTaggedRequestArg) ==
                   TS_SUCCESS);
 
@@ -981,6 +1239,39 @@ TSRemapDoRemap(void *instance, TSHttpTxn txn, TSRemapRequestInfo *rri)
   if (!AuthRequestUriRequiresAuthorization(options, rri->requestBufp, rri->requestUrl)) {
     AuthLogDebug("request URI does not match --uri-pattern; skipping authorization proxy entirely");
     return TSREMAP_NO_REMAP;
+  }
+
+  // The plugin's own authorization sub-requests must never take the cache or
+  // breaker shortcuts below: the POST_REMAP hook ignores them, so a breaker
+  // probe elected here would never report back.
+  if (!TSHttpTxnIsInternal(txn)) {
+    // 1. Cache first. A cache hit is a legitimate allow whatever state the
+    //    breaker is in -- and checking the breaker first could elect a
+    //    half-open probe for a request that then never reaches the backend.
+    if (options->cache_ttl_ms > 0) {
+      std::string key = AuthCacheKeyFor(options, txn, rri->requestBufp, rri->requestUrl);
+      if (key.empty()) {
+        AuthStatInc(AUTH_STAT_CACHE_SKIP); // uncacheable: always asks the backend
+      } else if (AuthAllowCache.Contains(key)) {
+        AuthStatInc(AUTH_STAT_CACHE_HIT);
+        AuthLogDebug("cache hit for '%s' -- skipping authorization proxy entirely", key.c_str());
+        // StateAuthorized would have applied this; we are bypassing it.
+        if (options->force) {
+          TSHttpTxnConfigIntSet(txn, TS_CONFIG_HTTP_CACHE_IGNORE_AUTHENTICATION, 1);
+        }
+        return TSREMAP_NO_REMAP;
+      } else {
+        AuthStatInc(AUTH_STAT_CACHE_MISS);
+      }
+    }
+
+    // 2. Circuit breaker. Open => do not call the backend; fail open at once.
+    //    Never cached, so viewers are re-checked as soon as the backend is back.
+    if (options->breaker && options->breaker->ShouldBypass()) {
+      AuthStatInc(AUTH_STAT_BREAKER_BYPASS);
+      AuthLogDebug("circuit breaker open for %s -- failing open without calling it", options->backend_id.c_str());
+      return TSREMAP_NO_REMAP;
+    }
   }
 
   TSUserArgSet(txn, AuthTaggedRequestArg, options);

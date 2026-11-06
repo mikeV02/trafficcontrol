@@ -32,7 +32,7 @@ This action runs the Traffic Monitor integration tests with a fake TO API and fa
 jobs:
   TM_Integration_tests:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@master

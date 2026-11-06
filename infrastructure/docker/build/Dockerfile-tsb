@@ -15,31 +15,49 @@
 # specific language governing permissions and limitations
 # under the License.
 
-    # Change BASE_IMAGE to centos when RHEL_VERSION=7
 ARG BASE_IMAGE=rockylinux \
     RHEL_VERSION=9
+
+# ── Build stage — compile tsb ─────────────────────────────────────────────────
 FROM ${BASE_IMAGE}:${RHEL_VERSION} AS tsb-build
+
 RUN yum clean all && yum -y install git
+
+# COPY before Go installation so GO_VERSION is available
 COPY GO_VERSION /
-RUN cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)) && \
-    curl -L https://dl.google.com/go/go$(cat /GO_VERSION).linux-${cpu_arch}.tar.gz | tar -C /usr/local -xz && ln -s /usr/local/go/bin/go /usr/bin/go
-# Fetch tested version of tsb:
-# <2020-12-01T20:37:43+00:00!alficles@gmail.com>: Upgraded to go-yaml v3 and added comments to patches.
-RUN mkdir -p /go/src/github.com/comcast/tsb && cd /go/src/github.com/comcast/tsb && git init && git remote add origin https://github.com/comcast/tsb && git fetch --depth=1 origin 851be3e137b20ba5d2d1eefd07cd303dc5f53865 && git reset --hard FETCH_HEAD
-RUN cd /go/src/github.com/comcast/tsb && CGOENABLED=0 go build -o /usr/bin/tsb
 
+# Install Go, fetch pinned tsb commit, and build — all in one layer
+# since these steps are sequential and share no reusable cache boundary
+RUN cpu_arch=$(([[ "$(uname -p)" == "x86_64" ]] && echo -n amd64) || \
+               ([[ "$(uname -p)" == "aarch64" ]] && echo -n arm64)) && \
+    curl -L https://dl.google.com/go/go$(cat /GO_VERSION).linux-${cpu_arch}.tar.gz \
+        | tar -C /usr/local -xz && \
+    ln -s /usr/local/go/bin/go /usr/bin/go && \
+    mkdir -p /go/src/github.com/comcast/tsb && \
+    cd /go/src/github.com/comcast/tsb && \
+    git init && \
+    git remote add origin https://github.com/comcast/tsb && \
+    git fetch --depth=1 origin 851be3e137b20ba5d2d1eefd07cd303dc5f53865 && \
+    git reset --hard FETCH_HEAD && \
+    CGO_ENABLED=0 go build -o /usr/bin/tsb
+
+# ── Final stage ───────────────────────────────────────────────────────────────
 FROM ${BASE_IMAGE}:${RHEL_VERSION}
-MAINTAINER dev@trafficcontrol.apache.org
 
-RUN	yum -y install git sudo
+LABEL maintainer="dev@trafficcontrol.apache.org"
 
-# The current configuration does not require docker-compose for tsb, so a dummy script is included instead of docker-compose.
-# If docker-compose is required, the docker socket will need to be mounted inside this container as well.
-#ADD	https://github.com/docker/compose/releases/download/1.26.2/docker-compose-Linux-x86_64 /usr/bin/docker-compose
-RUN	echo -e "#!/usr/bin/env bash\necho docker-compose is not supported in this container and the build command will not work.\nexit 1" > /usr/bin/docker-compose
+# Combine all setup into a single layer:
+# - install runtime deps
+# - create docker-compose stub (not supported in this container)
+# - configure git identity for tsb operations
+RUN yum -y install git sudo && \
+    yum clean all && \
+    printf '#!/usr/bin/env bash\necho "docker-compose is not supported in this container."\nexit 1\n' \
+        > /usr/bin/docker-compose && \
+    chmod +x /usr/bin/docker-compose && \
+    git config --global user.email "dev@trafficcontrol.apache.org" && \
+    git config --global user.name "Apache Traffic Control"
 
-RUN	chmod +x /usr/bin/docker-compose
-COPY	--from=tsb-build /usr/bin/tsb /usr/bin/tsb
-RUN	git config --global user.email "dev@trafficcontrol.apache.org"
-RUN	git config --global user.name "Apache Traffic Control"
-CMD	/usr/bin/tsb -v cd /opt/tsb-ats fetch prebuild;
+COPY --from=tsb-build /usr/bin/tsb /usr/bin/tsb
+
+CMD ["/usr/bin/tsb", "-v", "cd", "/opt/tsb-ats", "fetch", "prebuild"]

@@ -37,7 +37,7 @@ This action runs the Traffic Control Health client  integration tests.
 ```yaml
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     services:
       postgres:

@@ -47,7 +47,7 @@ This action runs the Traffic Ops Go client integration tests with the Traffic Op
 ```yaml
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     services:
       postgres:
